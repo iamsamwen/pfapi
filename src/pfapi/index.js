@@ -191,8 +191,8 @@ class PfapiApp extends HttpRequest {
 
         this.throttle = new HttpThrottle(this, this.redis_cache, this.local_cache);
 
-        if (this.config_uid) subscribe_lifecycle_events();
-        
+        if (this.config_uid) this.subscribe_lifecycle_events();
+
         this.run_maintenance();
 
         this.strapi.PfapiApp = this;

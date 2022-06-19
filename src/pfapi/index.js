@@ -32,10 +32,10 @@ class PfapiApp extends HttpRequest {
             throw new Error('missing or empty argument strapi');
         }
         if (!config_uid) {
-            throw new Error('missing or empty argument config_uid');
+            console.warn('missing or empty argument config_uid');
         }
         this.strapi = strapi;
-        this.config_uid = config_uid;
+        if (config_uid) this.config_uid = config_uid;
         this.config = this.get_default_config();
         this.uuid = uuidv4();
         this.run_maintenance_interval = 10000;
@@ -131,7 +131,7 @@ class PfapiApp extends HttpRequest {
                 break;
             case 'upsert': {
                     const {model, data} = message;
-                    if (data && model && this.config_uid.endsWith(`${model}.${model}`)) {
+                    if (this.config_uid && data && model && this.config_uid.endsWith(`${model}.${model}`)) {
                         this.update_config(data);
                     } else {
                         console.log(`unknown message ${JSON.stringify(message)}`);
@@ -140,7 +140,7 @@ class PfapiApp extends HttpRequest {
                 break;
             case 'delete': {
                 const {model, data} = message;
-                    if (model && this.config_uid.endsWith(`${model}.${model}`)) {
+                    if (this.config_uid && model && this.config_uid.endsWith(`${model}.${model}`)) {
                         this.del_config(data.name);
                     } else {
                         console.log(`unknown message ${JSON.stringify(message)}`);
@@ -313,6 +313,8 @@ class PfapiApp extends HttpRequest {
 
     async update_all_configs() {
 
+        if (!this.config_uid) return;
+
         const query = {where: {publishedAt: {$ne: null}}};
         if (this.update_at) {
             query.where.$or = [{createdAt: {$gt: this.update_at}}, {updatedAt: {$gt: this.update_at}}];
@@ -324,16 +326,23 @@ class PfapiApp extends HttpRequest {
     }
 
     async fetch_config(name) {
+
+        if (!this.config_uid) return {};
+
         const result = await this.strapi.query(this.config_uid).findOne({where: {name, publishedAt: {$ne: null}}}) || {};
+
         return this.merge_and_clean_data(result);
     }
 
     merge_and_clean_data({name, data = {}, ...rest}) {
-        if (!rest) return data;
+
+        if (!rest || Object.keys(rest).length === 0) return data;
+
         for (const [k, v] of Object.entries(rest)) {
             if (v === null || ignore_keys.includes(k)) continue;
             data[k] = v;
         }
+
         return data;
     }
 }

@@ -18,7 +18,7 @@ module.exports = async (ctx, params, composite) => {
             data[key] = null;
             promises.push(run_refreshable(key, params, value, result));
         } else if (typeof value !== 'function') {
-            if (data[key] !== undefined) data[key] = value;
+            if (data[key] === undefined) data[key] = value;
         }
     }
 

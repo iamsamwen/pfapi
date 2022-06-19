@@ -170,7 +170,7 @@ class PfapiApp extends HttpRequest {
         }
     }
 
-    async start() {
+    async start(strapi) {
         
         Object.assign(this, get_class_config(this, await this.fetch_config(this.constructor.name)));
 
@@ -200,6 +200,8 @@ class PfapiApp extends HttpRequest {
         this.run_maintenance();
 
         global.PfapiApp = this;
+        
+        if (strapi) strapi.PfapiApp = this;
     }
 
     run_maintenance() {

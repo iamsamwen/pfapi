@@ -207,17 +207,17 @@ class PfapiApp extends HttpRequest {
             afterUpdate(event) {
                 if (event.result.publishedAt) {
                     if (event.params.data.name) {
-                        this.publish({uid, action: 'delete', data: event.params.data});
+                        this.publish({uid: this.config_uid, action: 'delete', data: event.params.data});
                     }
-                    this.publish({uid, action: 'upsert', data: event.result});
+                    this.publish({uid: this.config_uid, action: 'upsert', data: event.result});
                 } else if (event.params.data.publishedAt === null) {
-                    this.publish({uid, action: 'delete', data: event.result});
+                    this.publish({uid: this.config_uid, action: 'delete', data: event.result});
                 }
             },
         
             afterDelete(event) {
                 if (event.result.publishedAt) {
-                    this.publish({uid, action: 'delete', data: event.result});
+                    this.publish({uid: this.config_uid, action: 'delete', data: event.result});
                 }
             },
           })

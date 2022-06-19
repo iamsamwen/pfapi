@@ -1,0 +1,31 @@
+{
+  "name": "pfapi",
+  "version": "1.0.0",
+  "description": "a strapi plugin uses local and redis caches to provide fast - single digit milliseconds api response",
+  "bugs": {
+    "url": "https://github.com/iamsamwen/pfapi/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iamsamwen/pfapi.git"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "strapi",
+    "plugin",
+    "local",
+    "redis",
+    "cache",
+    "fast",
+    "single",
+    "digit",
+    "milliseconds",
+    "api",
+    "response"
+  ],
+  "author": "Sam Wen",
+  "license": "MIT Expat License"
+}

@@ -198,29 +198,38 @@ class PfapiApp extends HttpRequest {
         this.strapi.PfapiApp = this;
     }
 
+    after_update(event) {
+        const uid = this.config_uid;
+        if (event.result.publishedAt) {
+            if (event.params.data.name) {
+                this.publish({uid, action: 'delete', data: event.params.data});
+            }
+            this.publish({uid, action: 'upsert', data: event.result});
+        } else if (event.params.data.publishedAt === null) {
+            this.publish({uid, action: 'delete', data: event.result});
+        }
+    }
+
+    after_delete(event) {
+        if (event.result.publishedAt) {
+            const uid = this.config_uid;
+            this.publish({uid, action: 'delete', data: event.result});
+        }
+    }
+
     subscribe_lifecycle_events() {
 
         this.strapi.db.lifecycles.subscribe({
 
-            models: [this.config_uid],
+            models: [strapi.PfapiApp.config_uid],
         
             afterUpdate(event) {
-                if (event.result.publishedAt) {
-                    if (event.params.data.name) {
-                        this.publish({uid: this.config_uid, action: 'delete', data: event.params.data});
-                    }
-                    this.publish({uid: this.config_uid, action: 'upsert', data: event.result});
-                } else if (event.params.data.publishedAt === null) {
-                    this.publish({uid: this.config_uid, action: 'delete', data: event.result});
-                }
+                strapi.PfapiApp.after_update(event);
             },
-        
             afterDelete(event) {
-                if (event.result.publishedAt) {
-                    this.publish({uid: this.config_uid, action: 'delete', data: event.result});
-                }
+                strapi.PfapiApp.after_delete(event);
             },
-          })
+        })
     }
 
     run_maintenance() {

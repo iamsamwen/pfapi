@@ -179,14 +179,14 @@ class PfapiApp extends HttpRequest {
 
     async start() {
         
-        global.PfapiApp = this;
-
         Object.assign(this, get_class_config(this, await this.fetch_config(this.constructor.name)));
 
         this.redis_cache = new RedisCache(process.env.REDIS_URI);
     
         this.local_cache = new LocalCache(this.redis_cache, await this.fetch_config('LocalCache'));
         
+        global.PfapiApp = this;
+
         await this.update_all_configs();
 
         if (this.config.proxy) {

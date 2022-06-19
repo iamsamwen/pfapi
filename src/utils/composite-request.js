@@ -1,6 +1,6 @@
 'use strict';
 
-const util = require('util');
+//const util = require('util');
 
 const Cacheable = require('../lib/cacheable');
 const Refreshable = require('../lib/refreshable');
@@ -18,7 +18,7 @@ module.exports = async (ctx, params, composite) => {
             data[key] = null;
             promises.push(run_refreshable(key, params, value, result));
         } else if (typeof value !== 'function') {
-            data[key] = value;
+            if (data[key] !== undefined) data[key] = value;
         }
     }
 
@@ -66,7 +66,14 @@ async function run_refreshable(key, params, refreshable, result) {
         
         result.data[key] = cacheable.data;
         result.params.push(cacheable.key);
-        Object.assign(result.aggregated_params, cacheable.params);
+
+        const tp = { ...cacheable.params };
+        for (const [key, value] of Object.entries(tp)) {
+            if (value === undefined || value === null) {
+                delete tp[key];
+            }
+        }
+        Object.assign(result.aggregated_params, tp);
 
     } catch (err) {
         if (err.message.startsWith('Not Found')) {

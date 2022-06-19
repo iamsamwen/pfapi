@@ -81,5 +81,5 @@ module.exports = {
         cors_secure_context: true,
         cors_allowed_methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
         cors_max_age: 2592000,
-    }
+    },
 };

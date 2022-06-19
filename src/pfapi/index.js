@@ -27,13 +27,16 @@ const ignore_keys = [ 'id', 'name', 'model', 'createdAt', 'updatedAt', 'publishe
 class PfapiApp extends HttpRequest {
 
     constructor(strapi, config_uid) {
+
         super();
+
         if (!strapi) {
-            throw new Error('missing or empty argument strapi');
+            throw new Error('PfapiApp, missing argument strapi.');
         }
         if (!config_uid) {
-            console.warn('missing or empty argument config_uid');
+            console.warn('PfapiApp, missing argument config_uid.');
         }
+
         this.strapi = strapi;
         if (config_uid) this.config_uid = config_uid;
         this.config = this.get_default_config();
@@ -54,7 +57,7 @@ class PfapiApp extends HttpRequest {
 
             blocked_ips_list: [],
 
-            proxy: true,
+            proxy: true
         }
     }
 
@@ -89,9 +92,8 @@ class PfapiApp extends HttpRequest {
     is_auth(ctx, {api_key, model}) {
         if (this.config.api_keys) {
             if (!api_key) return false;
-            const user_info = this.config.api_keys[api_key];
-            if (user_info) {
-                ctx.user_info = user_info;
+            const api_info = this.config.api_keys[api_key];
+            if (api_info) {
                 if (this.config.allowed_models) {
                     return this.config.allowed_models.includes(model);
                 }
@@ -99,6 +101,9 @@ class PfapiApp extends HttpRequest {
             }
             return false;
         } else {
+            if (this.config.allowed_models) {
+                return this.config.allowed_models.includes(model);
+            }
             return true;
         }
     }
@@ -130,8 +135,8 @@ class PfapiApp extends HttpRequest {
                 delete this.instances[from];
                 break;
             case 'upsert': {
-                    const {model, data} = message;
-                    if (this.config_uid && data && model && this.config_uid.endsWith(`${model}.${model}`)) {
+                    const {uid, data} = message;
+                    if (this.config_uid && uid === this.config_uid && data ) {
                         this.update_config(data);
                     } else {
                         console.log(`unknown message ${JSON.stringify(message)}`);
@@ -139,8 +144,8 @@ class PfapiApp extends HttpRequest {
                 }
                 break;
             case 'delete': {
-                const {model, data} = message;
-                    if (this.config_uid && model && this.config_uid.endsWith(`${model}.${model}`)) {
+                const {uid, data} = message;
+                    if (this.config_uid && uid === this.config_uid) {
                         this.del_config(data.name);
                     } else {
                         console.log(`unknown message ${JSON.stringify(message)}`);
@@ -156,24 +161,21 @@ class PfapiApp extends HttpRequest {
         await this.pubsub.publish(message);
     }
 
-    after_update(event, get_send_delete_data) {
+    after_update(uid, event, get_send_delete_data) {
         if (event.result.publishedAt) {
-            const model = event.model.singularName;
             if (get_send_delete_data) {
                 const data = get_send_delete_data(event);
-                if (data) this.publish({model, action: 'delete', data});
+                if (data) this.publish({uid, action: 'delete', data});
             }
             this.publish({model, action: 'upsert', data: event.result});
         } else if (event.params.data.publishedAt === null) {
-            const model = event.model.singularName;
-            this.publish({model, action: 'delete', data: event.result});
+            this.publish({uid, action: 'delete', data: event.result});
         }
     }
     
-    after_delete = (event) => {
+    after_delete = (uid, event) => {
         if (event.result.publishedAt) {
-            const model = event.model.singularName;
-            this.publish({model, action: 'delete', data: event.result});
+            this.publish({uid, action: 'delete', data: event.result});
         }
     }
 
@@ -214,11 +216,13 @@ class PfapiApp extends HttpRequest {
     run_maintenance() {
 
         this.update_timer = setInterval(async () => {
+
             const now_ms = Date.now();
             await this.publish({action: 'keep-alive', now_ms});
             for (const [uuid, timestamp] of Object.entries(this.instances)) {
                 if (now_ms - timestamp > 3 * this.run_maintenance_interval) delete this.instances[uuid];
             }
+
             if (this.is_master()) {
                 if (!this.refresh_queue) {
                     console.log('start refresh queue', this.uuid);
@@ -236,10 +240,12 @@ class PfapiApp extends HttpRequest {
                     this.refresh_queue = null;
                 }
             }
+
             const { config_update_interval } = this.config;
             if (config_update_interval && (!this.update_at || now_ms - this.update_at.getTime() > config_update_interval)) {
                 await this.update_all_configs();
             }
+
         }, this.run_maintenance_interval);
 
     }
@@ -278,36 +284,47 @@ class PfapiApp extends HttpRequest {
     }
 
     get_config(name) {
+
         if (!this.local_cache) {
             throw new Error('local_cache is not setup');
         }
+
         const key = this.get_config_key(name);
+
         return this.local_cache.get(key) || {};
     }
 
     del_config(name) {
+
         if (!this.local_cache) {
             throw new Error('local_cache is not setup');
         }
+
         if (!name) return false;
+
         const key = this.get_config_key(name);
         if (name === this.constructor.name) {
             this.config = this.get_default_config();
         }
+
         return this.local_cache.delete(key);
     }
 
     update_config(item) {
+
         if (!this.local_cache) {
             throw new Error('local_cache is not setup');
         }
+
         if (!item || !item.name) return false;
+
         const key = this.get_config_key(item.name);
         const data = this.merge_and_clean_data(item);
         const cacheable = new Cacheable({key, data, permanent: true});
         if (item.name === this.constructor.name) {
             this.config = data;
         }
+
         return this.local_cache.save(cacheable);
     }
 

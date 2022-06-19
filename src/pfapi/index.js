@@ -191,11 +191,11 @@ class PfapiApp extends HttpRequest {
 
         this.throttle = new HttpThrottle(this, this.redis_cache, this.local_cache);
 
-        if (this.config_uid) this.subscribe_lifecycle_events();
-
         this.run_maintenance();
 
         this.strapi.PfapiApp = this;
+
+        if (this.config_uid) this.subscribe_lifecycle_events();
     }
 
     after_update(event) {
@@ -221,7 +221,7 @@ class PfapiApp extends HttpRequest {
 
         this.strapi.db.lifecycles.subscribe({
 
-            models: [strapi.PfapiApp.config_uid],
+            models: [this.strapi.PfapiApp.config_uid],
         
             afterUpdate(event) {
                 strapi.PfapiApp.after_update(event);

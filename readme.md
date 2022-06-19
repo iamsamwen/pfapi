@@ -12,38 +12,25 @@ yarn create strapi-app strapi-pfapi-app --quickstart
 
 after create and login your Strapi account from browser, stop the strapi server.
 
-### step 2 create plugin pfapi
+### step 2 install [strapi-plugin-pfapi][https://github.com/iamsamwen/strapi-plugin-pfapi]
 
 ```bash
+cd strapi-pfapi-app
 
-yarn strapi generate plugin
-? Plugin name pfapi
-...
+yarn add strapi-plugin-pfapi
 ```
-follow in the instruction to make the file plugins.js file.
 
-### step 3 create content type: pfapi_config as following:
+### step 3 create test content-type and insert few rows of data
 
-```json
-{
-  "kind": "collectionType",
-  "collectionName": "pfapi_configs",
-  "info": {
-    "singularName": "pfapi-config",
-    "pluralName": "pfapi-configs",
-    "displayName": "pfapi-config"
-  },
-  "options": {
-    "draftAndPublish": true,
-    "comment": ""
-  },
-  "attributes": {
-    "name": {
-      "type": "string"
-    },
-    "data": {
-      "type": "json"
-    }
-  }
-}
-```
+http://localhost:1337/admin/plugins/content-type-builder
+
+### step 4 test pfapi
+
+
+http://localhost:1337/pfapi/test/find-one/1
+
+http://localhost:1337/pfapi/test/find-many
+
+
+assuming the name of the content-type you created is test
+

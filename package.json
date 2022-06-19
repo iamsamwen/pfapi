@@ -1,13 +1,13 @@
 {
-  "name": "pfapi",
-  "version": "1.0.0",
+  "name": "strapi-pfapi",
+  "version": "1.0.1",
   "description": "a strapi plugin uses local and redis caches to provide fast - single digit milliseconds api response",
   "bugs": {
-    "url": "https://github.com/iamsamwen/pfapi/issues"
+    "url": "https://github.com/iamsamwen/strapi-pfapi/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/iamsamwen/pfapi.git"
+    "url": "https://github.com/iamsamwen/strapi-pfapi.git"
   },
   "main": "src/index.js",
   "scripts": {

@@ -71,7 +71,7 @@ class PfapiApp extends HttpRequest {
             params[key] = value;
         }
         
-        if (params.model) params.uid = `api::${params.model}.${params.model}`;
+        if (!params.uid && params.model) params.uid = `api::${params.model}.${params.model}`;
     
         params.has_sort = !!params.sort;
 
@@ -90,20 +90,20 @@ class PfapiApp extends HttpRequest {
         return this.throttle.is_throttled(ctx);
     }    
 
-    is_auth(ctx, {api_key, model}) {
+    is_auth(ctx, {api_key, uid}) {
         if (this.config.api_keys) {
             if (!api_key) return false;
             const api_info = this.config.api_keys[api_key];
             if (api_info) {
-                if (this.config.allowed_models) {
-                    return this.config.allowed_models.includes(model);
+                if (this.config.allowed_uids) {
+                    return this.config.allowed_uids.includes(uid);
                 }
                 return true;
             }
             return false;
         } else {
-            if (this.config.allowed_models) {
-                return this.config.allowed_models.includes(model);
+            if (this.config.allowed_uids) {
+                return this.config.allowed_uids.includes(uid);
             }
             return true;
         }

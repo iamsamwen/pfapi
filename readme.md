@@ -32,6 +32,8 @@ http://localhost:1337/pfapi/test/find-one/1
 
 http://localhost:1337/pfapi/test/find-many
 
+http://localhost:1337/pfapi/test/get-count
+
 http://localhost:1337/pfapi/test/get-composite
 
 assuming the name of the content-type you created is test

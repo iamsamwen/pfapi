@@ -162,24 +162,6 @@ class PfapiApp extends HttpRequest {
         await this.pubsub.publish(message);
     }
 
-    after_update(uid, event, get_send_delete_data) {
-        if (event.result.publishedAt) {
-            if (get_send_delete_data) {
-                const data = get_send_delete_data(event);
-                if (data) this.publish({uid, action: 'delete', data});
-            }
-            this.publish({model, action: 'upsert', data: event.result});
-        } else if (event.params.data.publishedAt === null) {
-            this.publish({uid, action: 'delete', data: event.result});
-        }
-    }
-    
-    after_delete = (uid, event) => {
-        if (event.result.publishedAt) {
-            this.publish({uid, action: 'delete', data: event.result});
-        }
-    }
-
     async start() {
         
         Object.assign(this, get_class_config(this, await this.fetch_config(this.constructor.name)));
@@ -209,9 +191,36 @@ class PfapiApp extends HttpRequest {
 
         this.throttle = new HttpThrottle(this, this.redis_cache, this.local_cache);
 
+        if (this.config_uid) subscribe_lifecycle_events();
+        
         this.run_maintenance();
 
         this.strapi.PfapiApp = this;
+    }
+
+    subscribe_lifecycle_events() {
+
+        this.strapi.db.lifecycles.subscribe({
+
+            models: [this.config_uid],
+        
+            afterUpdate(event) {
+                if (event.result.publishedAt) {
+                    if (event.params.data.name) {
+                        this.publish({uid, action: 'delete', data: event.params.data});
+                    }
+                    this.publish({uid, action: 'upsert', data: event.result});
+                } else if (event.params.data.publishedAt === null) {
+                    this.publish({uid, action: 'delete', data: event.result});
+                }
+            },
+        
+            afterDelete(event) {
+                if (event.result.publishedAt) {
+                    this.publish({uid, action: 'delete', data: event.result});
+                }
+            },
+          })
     }
 
     run_maintenance() {

@@ -26,6 +26,8 @@ function find() {
     if (start_dir.split(node_path.sep).includes('node_modules')) {
         start_dir = node_path.dirname(node_path.dirname(__dirname));
     }
+    project_root_dir = find_files(start_dir, ['.env', 'package.json', 'node_modules'], ['strapi-server.js']);
+    if (project_root_dir) return project_root_dir;
     project_root_dir = find_files(start_dir, ['.git', 'package.json', 'node_modules'], ['strapi-server.js']);
     if (project_root_dir) return project_root_dir;
     project_root_dir = find_files(start_dir, ['package.json', 'node_modules'], ['strapi-server.js']);

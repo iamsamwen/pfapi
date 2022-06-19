@@ -23,15 +23,15 @@ class Refreshable {
         if (this.constructor.name === 'Refreshable') {   // relative path
             const full_path = node_path.join(project_root_dir, filepath);
             if (!fs.existsSync(full_path)) {
-                throw new Error(`Refreshable, ${full_path} must be a relative path from project_root!`);
+                throw new Error(`${this.constructor.name}, failed to find project root! filepath: ${filepath}, project root: ${project_root_dir}, full_path: ${full_path}`);
             }
             this.module_path = filepath;
             this.module = require(full_path);
-        } else {                                        // __filename
-            if (!filepath.startsWith(project_root_dir) || !fs.existsSync(filepath)) {
-                throw new Error(`${filepath} must be an absolute file path of ${this.constructor.name}!`);
-            }
+        } else {                                         // __filename
             this.module_path = filepath.slice(project_root_dir.length);
+            if (!filepath.startsWith(project_root_dir) || !fs.existsSync(filepath)) {
+                throw new Error(`${this.constructor.name}, failed to find project root! filepath ${filepath}, project root: ${project_root_dir}, module path: ${this.module_path}`);
+            }
         }
     }
 

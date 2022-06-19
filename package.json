@@ -27,5 +27,11 @@
     "response"
   ],
   "author": "Sam Wen",
-  "license": "MIT Expat License"
+  "license": "MIT Expat License",
+  "dependencies": {
+    "base-x": "4.0.0",
+    "ioredis": "5.0.6",
+    "lodash": "4.17.21",
+    "uuid": "8.3.2"
+  }
 }

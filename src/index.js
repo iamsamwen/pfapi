@@ -1,3 +1,5 @@
 'use strict';
 
-console.log('hello world!');
+Object.assign(module.exports, require('./lib'));
+Object.assign(module.exports, require('./utils'));
+

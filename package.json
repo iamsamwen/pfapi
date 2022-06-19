@@ -1,6 +1,6 @@
 {
   "name": "strapi-pfapi",
-  "version": "1.1.2",
+  "version": "1.1.5",
   "description": "a strapi plugin library uses local and redis caches to achieve fast - single digit milliseconds api processing time.",
   "bugs": {
     "url": "https://github.com/iamsamwen/strapi-pfapi/issues"

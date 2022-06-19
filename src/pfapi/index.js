@@ -350,10 +350,10 @@ class PfapiApp extends HttpRequest {
             if (items.length === 0) {
                 const entries = [];
                 for (const [name, data] of Object.entries(default_configs)) {
-                    entries.push({name, data});
+                    entries.push({name, data, publishedAt: now});
                 }
                 if (entries.length > 0) {
-                    this.strapi.query(this.config_uid).createMany({data: entries});
+                    await this.strapi.query(this.config_uid).createMany({data: entries});
                 }
                 this.updated_at = new Date();
             } else {

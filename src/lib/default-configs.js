@@ -63,7 +63,7 @@ module.exports = {
         
         channel_name: 'PUBSUB::CHANNEL',
 
-        exclude_self: true
+        exclude_self: false
     },
 
     HttpResponse: {

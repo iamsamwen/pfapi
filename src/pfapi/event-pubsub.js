@@ -5,7 +5,7 @@ const { PubSub } = require('../');
 class EventPubSub extends PubSub {
 
     constructor(app, redis_client, uuid) {
-        super(redis_client, {channel_name: 'EVENT-PUBSUB::CHANNEL', exclude_self: false}, uuid);
+        super(redis_client, {}, uuid);
         this.app = app;
     }
 

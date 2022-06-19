@@ -3,7 +3,8 @@
 const fp = require('lodash/fp');
 const { v4: uuidv4 } = require('uuid');
 
-const { HttpRequest, Cacheable, RedisCache, LocalCache, LocalInvalidate, RefreshQueue, EvictionWatch, get_class_config, get_cache_key } = require('../');
+const { HttpRequest, Cacheable, RedisCache, LocalCache, LocalInvalidate, 
+    RefreshQueue, EvictionWatch, get_class_config, get_cache_key, default_configs } = require('../');
 
 const EventPubSub = require('./event-pubsub');
 const HttpThrottle = require('./http-throttle');
@@ -318,6 +319,9 @@ class PfapiApp extends HttpRequest {
 
         if (!item || !item.name) return false;
 
+        // not ready yet
+        if (!this.updated_at) return false;
+
         const key = this.get_config_key(item.name);
         const data = this.merge_and_clean_data(item);
         const cacheable = new Cacheable({key, data, permanent: true});
@@ -333,12 +337,29 @@ class PfapiApp extends HttpRequest {
         if (!this.config_uid) return;
 
         const query = {where: {publishedAt: {$ne: null}}};
-        if (this.update_at) {
-            query.where.$or = [{createdAt: {$gt: this.update_at}}, {updatedAt: {$gt: this.update_at}}];
-        } else this.update_at = new Date();;
+        if (this.updated_at) {
+            query.where.$or = [{createdAt: {$gt: this.updated_at}}, {updatedAt: {$gt: this.updated_at}}];
+        }
+
+        const now = new Date();
 
         const items = await this.strapi.query(this.config_uid).findMany(query);
         for (const item of items) this.update_config(item);
+
+        if (!this.updated_at) {
+            if (items.length === 0) {
+                const entries = [];
+                for (const [name, data] of Object.entries(default_configs)) {
+                    entries.push({name, data});
+                }
+                if (entries.length > 0) {
+                    this.strapi.query(this.config_uid).createMany({data: entries});
+                }
+                this.updated_at = new Date();
+            } else {
+                this.updated_at = now;
+            }
+        }
     
     }
 

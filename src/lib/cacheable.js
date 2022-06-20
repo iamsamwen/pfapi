@@ -140,9 +140,13 @@ class Cacheable {
         if (!this.refreshable && this.module_path) {
             this.refreshable = new Refreshable(this.module_path);
         }
+        if (!this.params) this.params = {};
         if (this.refreshable) {
             update_params(this.params);
             this.params = this.refreshable.reduce(this.params);
+            for (const [key, value] of Object.entries(this.params)) {
+                if (value === undefined) delete this.params[key];
+            }
             const key = get_cache_key(this);
             if (!this.key) this.key = key;
             else if (this.key !== key) {
@@ -152,8 +156,12 @@ class Cacheable {
                 this.key = key;
             }
         } else if (!this.key) {
+            for (const [key, value] of Object.entries(this.params)) {
+                if (value === undefined) delete this.params[key];
+            }
             this.key = get_cache_key(this);
         }
+
         if (!this.checksum && this.hasOwnProperty('data')) {
             this.checksum = get_checksum(this.data);
         }

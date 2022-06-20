@@ -4,11 +4,21 @@
 
 const Cacheable = require('../lib/cacheable');
 const Refreshable = require('../lib/refreshable');
+const get_config = require('../lib/get-config');
 
 module.exports = async (ctx, params, composite) => {
 
+    const data = {};
+
+    if (params.name) {
+        const config = get_config(params.name);
+        if (config && config.attributes) {
+            Object.assign(data, config.attributes);
+        }
+    }
+
     const now_ms = Date.now();
-    const data = params.attributes ? { ...params.attributes } : {};
+
     const result = { params: [], aggregated_params: {}, data, timestamp: now_ms, modified_time: now_ms, ttl: 1800000 };
 
     const promises = [];
@@ -67,13 +77,12 @@ async function run_refreshable(key, params, refreshable, result) {
         result.data[key] = cacheable.data;
         result.params.push(cacheable.key);
 
-        const tp = { ...cacheable.params };
-        for (const [key, value] of Object.entries(tp)) {
-            if (value === undefined || value === null) {
-                delete tp[key];
+        for (const [key, value] of Object.entries(cacheable.params)) {
+            if (value === undefined) {
+                continue;
             }
+            result.aggregated_params[key] = value;
         }
-        Object.assign(result.aggregated_params, tp);
 
     } catch (err) {
         if (err.message.startsWith('Not Found')) {

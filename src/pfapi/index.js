@@ -309,7 +309,6 @@ class PfapiApp extends HttpRequest {
         }
 
         const key = this.get_config_key(name);
-
         return this.local_cache.get(key) || {};
     }
 
@@ -336,9 +335,6 @@ class PfapiApp extends HttpRequest {
         }
 
         if (!item || !item.name) return false;
-
-        // not ready yet
-        if (!this.updated_at) return false;
 
         const key = this.get_config_key(item.name);
         const data = this.merge_and_clean_data(item);

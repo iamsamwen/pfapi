@@ -1,7 +1,7 @@
 'use strict';
 
 const fp = require('lodash/fp');
-const Cacheable = require('../lib/cacheable');
+const Cacheable = require('../models/cacheable');
 const get_checksum = require('../lib/get-checksum');
 const { get_redis_key } = require('../lib/redis-keys');
 

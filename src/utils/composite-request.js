@@ -2,8 +2,8 @@
 
 //const util = require('util');
 
-const Cacheable = require('../lib/cacheable');
-const Refreshable = require('../lib/refreshable');
+const Cacheable = require('../models/cacheable');
+const Refreshable = require('../models/refreshable');
 const get_config = require('../lib/get-config');
 
 module.exports = async (ctx, params, composite) => {

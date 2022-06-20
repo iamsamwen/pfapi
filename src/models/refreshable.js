@@ -2,7 +2,7 @@
 
 const node_path = require('path');
 const fs = require('fs');
-const project_root = require('./project-root');
+const project_root = require('../lib/project-root');
 
 class Refreshable {
 

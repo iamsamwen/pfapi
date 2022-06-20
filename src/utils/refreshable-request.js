@@ -1,6 +1,6 @@
 'use strict';
 
-const Cacheable = require('../lib/cacheable');
+const Cacheable = require('../models/cacheable');
 
 module.exports = async (ctx, params, refreshable) => {
 

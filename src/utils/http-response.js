@@ -23,7 +23,7 @@ class HttpResponse {
                 this.handle_head_get_request(ctx, cacheable);
                 break;
             default:
-                this.handle_simple_request(ctx, 500, {message: `unexpected method ${ctx.request.method}`});
+                this.handle_simple_request(ctx, 405, {message: `Method Not Allowed: ${ctx.request.method}`});
         }
 
     }
@@ -41,6 +41,9 @@ class HttpResponse {
             if (status < 400) data = null;
         } else if (method === 'HEAD') {
             if (status < 400) data = null;
+        } else if (method !== 'GET' && status < 300) {
+            this.handle_simple_request(ctx, 405, {message: `Method Not Allowed: ${ctx.request.method}`});
+            return;
         }
 
         const origin = ctx.get('Origin');

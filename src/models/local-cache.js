@@ -1,6 +1,6 @@
 'us strict';
 
-const get_class_config = require('./get-class-config');
+const get_class_config = require('../lib/get-class-config');
 
 /**
  * note for permanent, only used for two purposes: 

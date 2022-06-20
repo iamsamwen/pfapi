@@ -1,12 +1,13 @@
 'use strict';
 
-const get_checksum = require('./get-checksum');
-const get_cache_key = require('./get-cache-key');
-const get_class_config = require('./get-class-config');
-const get_body = require('./get-body');
 const info_keys = require('./info-keys'); 
-const get_dependency_key = require('./get-dependency-key');
-const update_params = require('./update-params');
+
+const get_checksum = require('../lib/get-checksum');
+const get_cache_key = require('../lib/get-cache-key');
+const get_class_config = require('../lib/get-class-config');
+const get_body = require('../lib/get-body');
+const get_dependency_key = require('../lib/get-dependency-key');
+const update_params = require('../lib/update-params');
 
 const Refreshable = require('./refreshable');
 

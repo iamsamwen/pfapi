@@ -11,7 +11,7 @@
   },
   "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "NODE_ENV=test mocha --timeout 3000 --reporter spec tests/*/test-*"
   },
   "keywords": [
     "strapi",
@@ -35,5 +35,11 @@
     "ioredis": "5.0.6",
     "lodash": "4.17.21",
     "uuid": "8.3.2"
+  },
+  "devDependencies": {
+    "chai": "4.3.6",
+    "eslint": "8.18.0",
+    "eslint-config-google": "0.14.0",
+    "mocha": "10.0.0"
   }
 }

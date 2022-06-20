@@ -1,16 +1,18 @@
 'use strict';
 
-module.exports = ({start, limit, total}) => {
+const get_start_limit = require('./get-start-limit');
 
-    if (isNaN(start)) start = 0;
-    if (typeof start !== 'number') start = Number(start);
-    if (isNaN(limit)) limit = 20;
-    if (typeof limit !== 'number') limit = Number(limit);
-    if (limit === 0) limit = 20;
+module.exports = (input = {}) => {
+
+    let [start, limit] = get_start_limit(input);
     
-    const pagination = { total, pageSize: limit };
+    let total = input.total;
+    if (isNaN(total)) total = 0;
+    if (typeof total !== 'number') total = Number(total);
+    if (total < 0) total = 0;
+    if (start > total) start = total;
 
-    if (start >= total) start = total;
+    const pagination = { total, pageSize: limit };
 
     pagination.page = Math.ceil((start + 1) / limit);
     pagination.pageCount = Math.ceil(total / limit);

@@ -1,10 +1,10 @@
 'use strict';
 
-const Refreshable = require('../lib/refreshable');
-const Composite = require('../lib/composite');
 const HttpResponse = require('./http-response');
-const refreshable_request = require('./refreshable-request');
-const composite_request = require('./composite-request');
+const Refreshable = require('../models/refreshable');
+const Composite = require('../models/composite');
+const refreshable_request = require('../utils/refreshable-request');
+const composite_request = require('../utils/composite-request');
 
 class HttpRequest {
 

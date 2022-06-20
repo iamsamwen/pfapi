@@ -21,24 +21,36 @@ function get() {
     return project_root_dir;
 }
 
+/**
+ * specific for strapi running environment
+ * 
+ * @returns project root
+ */
 function find() {
+    
     let start_dir = node_path.dirname(require.main.filename);
     if (start_dir.split(node_path.sep).includes('node_modules')) {
         start_dir = node_path.dirname(node_path.dirname(__dirname));
     }
+    
     project_root_dir = find_files(start_dir, ['.env', 'package.json', 'node_modules'], ['strapi-server.js']);
     if (project_root_dir) return project_root_dir;
+
     project_root_dir = find_files(start_dir, ['.git', 'package.json', 'node_modules'], ['strapi-server.js']);
     if (project_root_dir) return project_root_dir;
+    
     project_root_dir = find_files(start_dir, ['package.json', 'node_modules'], ['strapi-server.js']);
     if (project_root_dir) return project_root_dir;
+    
     throw new Error('failed to find project root directory');
 }
 
 let root;
 
 function find_files(dir, files, not_files) {
+
     if (!root) root = (os.platform === "win32") ? process.cwd().split(node_path.sep)[0] : '/';
+    
     while (dir && dir !== root) {
         let found_all = true;
         for (const file of not_files) {

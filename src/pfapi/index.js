@@ -195,36 +195,40 @@ class PfapiApp extends HttpRequest {
 
         this.strapi.PfapiApp = this;
 
-        if (this.config_uid) this.subscribe_lifecycle_events();
+        if (this.config_uid) this.subscribe_upsertdel_events(this.config_uid);
     }
 
-    after_update(event) {
-        const uid = this.config_uid;
-        if (event.result.publishedAt) {
-            if (event.params.data.name) {
+    after_upsert(event) {
+        if (!event.result.hasOwnProperty('publishedAt') || event.result.publishedAt) {
+            const uid = event.model.uid;
+            if (event.action === 'afterUpdate' && event.params.data.name) {
                 this.publish({uid, action: 'delete', data: event.params.data});
             }
             this.publish({uid, action: 'upsert', data: event.result});
         } else if (event.params.data.publishedAt === null) {
+            const uid = event.model.uid;
             this.publish({uid, action: 'delete', data: event.result});
         }
     }
 
     after_delete(event) {
-        if (event.result.publishedAt) {
-            const uid = this.config_uid;
+        if (!event.result.hasOwnProperty('publishedAt') || event.result.publishedAt) {
+            const uid = event.model.uid;
             this.publish({uid, action: 'delete', data: event.result});
         }
     }
 
-    subscribe_lifecycle_events() {
+    subscribe_upsertdel_events(uid) {
 
         this.strapi.db.lifecycles.subscribe({
 
-            models: [this.strapi.PfapiApp.config_uid],
+            models: [uid],
         
+            afterCreate(event) {
+                strapi.PfapiApp.after_upsert(event);
+            },
             afterUpdate(event) {
-                strapi.PfapiApp.after_update(event);
+                strapi.PfapiApp.after_upsert(event);
             },
             afterDelete(event) {
                 strapi.PfapiApp.after_delete(event);
@@ -237,6 +241,7 @@ class PfapiApp extends HttpRequest {
         this.update_timer = setInterval(async () => {
 
             const now_ms = Date.now();
+
             await this.publish({action: 'keep-alive', now_ms});
             for (const [uuid, timestamp] of Object.entries(this.instances)) {
                 if (now_ms - timestamp > 3 * this.run_maintenance_interval) delete this.instances[uuid];

@@ -1,7 +1,7 @@
 'use strict';
 
-const { get_redis_key } = require('./redis-keys');
-const RedisBase = require('./redis-base');
+const { get_redis_key } = require('../lib/redis-keys');
+const RedisBase = require('../lib/redis-base');
 
 class RedisCache extends RedisBase {
     

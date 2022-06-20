@@ -1,6 +1,6 @@
 'use strict';
 
-const Cacheable = require('../lib/cacheable');
+const Cacheable = require('../models/cacheable');
 const get_class_config = require('../lib/get-class-config');
 
 class RefreshQueue {

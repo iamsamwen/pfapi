@@ -1,9 +1,11 @@
 'use strict';
 
-module.exports = ({start, limit, page, pageSize} = {}) => {
+module.exports = ({start, limit, pagination} = {}) => {
 
     if (limit === undefined || limit === null) {
-        limit = pageSize;
+        if (pagination && pagination.pageSize) {
+            limit = Number(pagination.pageSize);
+        }
     }
     if (isNaN(limit)) limit = 20;
     if (typeof limit !== 'number') limit = Number(limit);
@@ -11,11 +13,13 @@ module.exports = ({start, limit, page, pageSize} = {}) => {
     else if (limit > 100) limit = 100;
 
     if (start === undefined || start === null) {
-        if (page) start = (Number(page) - 1) * limit;
+        if (pagination && pagination.page) {
+            start = (Number(pagination.page) - 1) * limit;
+        }
     }
     if (isNaN(start)) start = 0;
     if (typeof start !== 'number') start = Number(start);
     if (start < 0) start = 0;
 
-    return [start, limit];
+    return {start, limit};
 }

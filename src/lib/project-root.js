@@ -28,18 +28,20 @@ function get() {
  */
 function find() {
     
+    const strapi_bin_path = '/node_modules/@strapi/strapi/bin';
+
     let start_dir = node_path.dirname(require.main.filename);
+    
+    if (start_dir.endsWith(strapi_bin_path)) {
+        project_root_dir = start_dir.slice(0, start_dir.length - strapi_bin_path.length);
+        return project_root_dir;
+    }
+
     if (start_dir.split(node_path.sep).includes('node_modules')) {
         start_dir = node_path.dirname(node_path.dirname(__dirname));
     }
-    
-    project_root_dir = find_files(start_dir, ['.env', 'package.json', 'node_modules'], ['strapi-server.js']);
-    if (project_root_dir) return project_root_dir;
 
-    project_root_dir = find_files(start_dir, ['.git', 'package.json', 'node_modules'], ['strapi-server.js']);
-    if (project_root_dir) return project_root_dir;
-    
-    project_root_dir = find_files(start_dir, ['package.json', 'node_modules'], ['strapi-server.js']);
+    project_root_dir = find_files(start_dir, ['.env', 'package.json', 'node_modules', 'src', 'config', 'database', 'public'], ['strapi-server.js']);
     if (project_root_dir) return project_root_dir;
     
     throw new Error('failed to find project root directory');

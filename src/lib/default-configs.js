@@ -32,7 +32,7 @@ module.exports = {
         max_size: 4096 * 16,
     
         // default ttl of local cache
-        default_ttl: 300000,
+        default_ttl: 180000,
     
         // run maintenance interval
         timer_interval: 30000,
@@ -45,7 +45,7 @@ module.exports = {
 
         batch_size: 64,
 
-        refresh_interval: 300000,
+        refresh_interval: 180000,
 
         // refresh the top proportion of queue size
         size_ratio: 0.33,
@@ -72,14 +72,14 @@ module.exports = {
 
         stale_secs: null,
 
-        allow_methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
+        allow_methods: ['GET', 'HEAD', 'OPTIONS'],
         content_type: 'application/json; charset=utf-8',
 
         cors_exposed_headers: [ 'Authorization', 'Content-Type', 'Accept', 'Accept-Language'],
         cors_allow_headers: [ 'Authorization', 'Content-Type', 'Accept', 'Accept-Language'],
         cors_allow_credentials: true,
         cors_secure_context: true,
-        cors_allowed_methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
+        cors_allowed_methods: ['GET', 'HEAD', 'OPTIONS'],
         cors_max_age: 2592000,
     },
 };

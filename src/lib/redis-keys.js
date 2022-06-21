@@ -11,7 +11,7 @@ module.exports.get_prefix_key = (redis_key) => {
         throw new Error('invalid redis_key format');
     }
     const prefix = parts[0];
-    const key = parts[1].substr(1, parts[1].length -2);
+    const key = parts[1].substr(1, parts[1].length - 2);
     return {prefix, key};
 };
 

@@ -7,7 +7,7 @@ const { on_invalidate, off_invalidate } = require('../lib/redis-invalidate');
  * watch EXP key delete and expire events from redis
  * push it into refresh priority queue
  */
-class EvictionWatch {
+class ExpiresWatch {
 
     constructor(redis, refresh_queue) {
         if (!redis) {
@@ -19,12 +19,14 @@ class EvictionWatch {
 
     async start() {
         this.expiration_client = await this.on_exp_invalidate(async (redis_keys) => {
-            //console.log(`EvictionWatch receives ${redis_keys.length} redis_keys`);
+            //console.log(`*** EvictionWatch receives ${redis_keys.length} redis_keys`, redis_keys);
             const keys = [];
             for (const redis_key of redis_keys) {
-                if (await this.has_exp_key(redis_key)) continue;
-                const {prefix, key} = get_prefix_key(redis_key);
-                if (prefix !== 'EXP') continue;
+                if (!redis_key.startsWith('EXP::')) continue;
+                if (!await this.is_key_expired(redis_key)) continue;
+                const {key} = get_prefix_key(redis_key);
+                if (!key) continue;
+                //console.log('key expired', key)
                 keys.push(key);
             }
             if (keys.length > 0) {
@@ -33,15 +35,20 @@ class EvictionWatch {
         });
     }
     
-    async has_exp_key(exp_key) {
+    async is_key_expired(exp_key) {
         const client = await this.redis.get_client();
-        const value = await client.exists(exp_key);
-        if (value) return true;
-        else return false;
+        const no_exp_key = 'NO-' + exp_key;
+        const multi = client.multi();
+        multi.exists(exp_key);
+        multi.exists(no_exp_key);
+        const result = await multi.exec();
+        if (result.length !== 2) return false;
+        if (result[0][1] === 1) return false;
+        if (result[1][1] === 1) return false;
+        return true;
     }
 
     async on_expires(keys) {
-        console.log(`on_expires received, ${keys.length} keys`, keys);
         if (!this.refresh_queue) return;
         await this.refresh_queue.push(keys);
     }
@@ -91,4 +98,4 @@ class EvictionWatch {
     }
 }
 
-module.exports = EvictionWatch;
+module.exports = ExpiresWatch;

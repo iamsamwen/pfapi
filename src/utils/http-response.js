@@ -30,14 +30,11 @@ class HttpResponse {
 
     handle_simple_request(ctx, status = 200, data) {
 
-        const { headers } = this.prepare_headers();
-
-        headers['Cache-Control'] = 'max-age=0, no-store, must-revalidate';
+        const { headers } = this.prepare_headers(ctx);
         
         const method = ctx.request.method;
 
         if (method === 'OPTIONS') {
-            if (this.config.allow_methods) headers['Allow'] = this.config.allow_methods.join(', ');
             if (status < 400) data = null;
         } else if (method === 'HEAD') {
             if (status < 400) data = null;
@@ -46,11 +43,10 @@ class HttpResponse {
             return;
         }
 
-        const origin = ctx.get('Origin');
-        if (origin) {
-            this.handle_cors_origin(origin, headers);
+        if (method === 'OPTIONS') {
+            this.handle_options_request(origin, headers);
         }
-
+        
         if (data && status !== 204 && status !== 304) {
             ctx.body = get_body(data);
             ctx.type = this.config.content_type;
@@ -63,7 +59,7 @@ class HttpResponse {
 
     handle_head_get_request(ctx, cacheable, head_only = false) {
 
-        const {headers, now_ms} = this.prepare_headers();
+        const {headers, now_ms} = this.prepare_headers(ctx);
 
         if (head_only) ctx.status = 204;
         else ctx.status = 200;
@@ -79,19 +75,11 @@ class HttpResponse {
         const max_age = Math.round((ttl - (now_ms - timestamp)) / 1000);
         if (max_age > 0) {
             headers['Cache-Control'] = `max-age=${max_age}, private, stale-while-revalidate=${this.config.stale_secs || max_age}`;
-            headers['Expires'] = new Date(now_ms + max_age).toGMTString();
-        } else {
-            headers['Cache-Control'] = 'max-age=0, no-store, must-revalidate';
-            headers['Expires'] = new Date(now_ms).toGMTString();
+            headers['Expires'] = new Date(now_ms + max_age * 1000).toGMTString();
         }
 
         if (key && checksum) {
             headers['ETag'] = get_etag({ key, checksum });
-        }
-
-        const origin = ctx.get('Origin');
-        if (origin) {
-            this.handle_cors_origin(origin, headers);
         }
 
         if (data && !head_only) {
@@ -114,7 +102,7 @@ class HttpResponse {
 
         if (header['if-modified-since']) {
             const if_modified_since = Date.parse(header['if-modified-since']);
-            if (if_modified_since >= rounded_modified_time) {
+            if (rounded_modified_time <= if_modified_since) {
                 ctx.status = 304;
                 return true;
             }
@@ -139,47 +127,47 @@ class HttpResponse {
 
     handle_options_request(ctx) {
 
-        const { headers } = this.prepare_headers();
+        const { headers } = this.prepare_headers(ctx);
 
-        if (this.config.allow_methods) headers['Allow'] = this.config.allow_methods.join(', ');
+        const {cors_exposed_headers, cors_allow_headers, cors_allowed_methods, 
+            cors_max_age, cors_secure_context} = this.config;
 
-        const origin = ctx.get('Origin');
-        if (origin) {
-            this.handle_cors_origin(origin, headers);
-        }
-
-        for (const [key, value] of Object.entries(headers)) ctx.set(key, value);
-
-        if (!has_status) ctx.status = 204;
-    }
-
-    handle_cors_origin(origin, headers) {
-
-        const {cors_exposed_headers, cors_allow_headers, cors_allowed_methods, cors_secure_context, 
-            cors_allow_credentials, cors_max_age} = this.config;
-
-        headers['Access-Control-Allow-Origin'] = origin;
         headers['Access-Control-Expose-Headers'] = cors_exposed_headers.join(', ');
-        headers['Access-Control-Allow-Credentials'] = cors_allow_credentials; 
         headers['Access-Control-Allow-Methods'] = cors_allowed_methods.join(', ');
         headers['Access-Control-Allow-Headers'] = cors_allow_headers.join(', ');
         headers['Access-Control-Max-Age'] = cors_max_age;
-        headers['Vary'] = 'Origin';
 
         if (cors_secure_context) {
             headers['Cross-Origin-Opener-Policy'] = 'same-origin';
             headers['Cross-Origin-Embedder-Policy'] = 'require-corp';
         }
+
+        for (const [key, value] of Object.entries(headers)) ctx.set(key, value);
+
+        ctx.status = 204;
     }
 
-    prepare_headers() {
+    prepare_headers(ctx) {
 
         const headers = {};
 
         const now_ms = get_rounded_ms();
 
         if (this.config.server_name) headers['Server'] = this.config.server_name;
+
         headers['Date'] = new Date(now_ms).toGMTString();
+        headers['Cache-Control'] = 'max-age=0, no-store, must-revalidate';
+        headers['Expires'] = new Date(now_ms).toGMTString();
+
+        if (this.config.allow_methods) headers['Allow'] = this.config.allow_methods.join(', ');
+
+        const origin = ctx.get('Origin');
+        if (origin) {
+            headers['Access-Control-Allow-Origin'] = origin;
+            headers['Access-Control-Allow-Credentials'] = this.config?.cors_allow_credentials || true; 
+        }
+
+        headers['Vary'] = 'Origin';
 
         return {headers, now_ms}
     }

@@ -16,5 +16,7 @@ module.exports = ({uid, id}) => {
         console.error(`generate dependency key without uid`);
         return null;
     }
-    return get_checksum({uid, id});
+    const data = { uid };
+    if (id) data.id = String(id);
+    return get_checksum(data);
 };

@@ -3,28 +3,15 @@
 const fp = require('lodash/fp');
 const { v4: uuidv4 } = require('uuid');
 
-const { HttpRequest, Cacheable, RedisCache, LocalCache, LocalInvalidate, 
-    RefreshQueue, EvictionWatch, get_class_config, get_cache_key, default_configs } = require('../');
+const { HttpRequest, Cacheable, RedisCache, LocalCache, 
+    RefreshQueue, ExpiresWatch, get_class_config, 
+    get_cache_key, default_configs, get_dependency_key } = require('../');
 
 const EventPubSub = require('./event-pubsub');
 const HttpThrottle = require('./http-throttle');
 
-const ignore_keys = [ 'id', 'name', 'model', 'createdAt', 'updatedAt', 'publishedAt', 'createdBy', 'updatedBy' ];
+const config_ignore_keys = [ 'id', 'name', 'model', 'createdAt', 'updatedAt', 'publishedAt', 'createdBy', 'updatedBy' ];
 
-/**
- * a simple schema of pfapi config content-type:
- * 
- *   "attributes": {
- *     "name": {
- *       "type": "string",
- *       "required": true,
- *       "unique": true
- *     },
- *     "data": {
- *       "type": "json"
- *     }
- *   }
- */
 class PfapiApp extends HttpRequest {
 
     constructor(strapi, config_uid) {
@@ -43,7 +30,8 @@ class PfapiApp extends HttpRequest {
         this.config = this.get_default_config();
         this.uuid = uuidv4();
         this.run_maintenance_interval = 10000;
-        this.instances = {};
+        this.instances = [];
+        this.subscribe_db_uids = [];
     }
 
     get_default_config() {
@@ -72,7 +60,7 @@ class PfapiApp extends HttpRequest {
         }
         
         if (!params.uid && params.model) params.uid = `api::${params.model}.${params.model}`;
-    
+        if (params.id) params.id = Number(params.id);
         params.has_sort = !!params.sort;
 
         return params;
@@ -130,26 +118,64 @@ class PfapiApp extends HttpRequest {
         //console.log('receive:', {message, from});
         switch(message.action) {
             case 'keep-alive':
-                this.instances[from] = message.now_ms;
+                let instance = {uuid: from, timestamp: message.now_ms};
+                if (this.instances.length > 0) {
+                    if (this.instances.find(x => x.uuid === from)) {
+                        instance = null;
+                    } else {
+                        for (let i = 0; i < this.instances.length; i++) {
+                            const { uuid, timestamp } = this.instances[i];
+                            if (instance.timestamp < timestamp) {
+                                this.instances.splice(i, 0, instance);
+                                instance = null;
+                            } else (instance.timestamp === timestamp && from > uuid) {
+                                this.instances.splice(i, 0, instance);
+                                instance = null;
+                            }
+                        }
+                    }
+                }
+                if (instance) this.instances.push(instance);
                 break;
             case 'shutdown':
-                delete this.instances[from];
+                const index = this.instances.findIndex(x => x.uuid === from);
+                if (index !== -1) this.instances.splice(index, 1);
+                break;
+            case 'subscribe-db-event': 
+                if (from !== this.uuid && message.uid) {
+                    this.subscribe_db_events(message.uid, false);
+                }
+                break;
+            case 'evict-local-cache': 
+                if (from !== this.uuid && message.keys) {
+                    for (const key of message.keys) {
+                        this.local_cache.delete({key});
+                    }
+                }
                 break;
             case 'upsert': {
                     const {uid, data} = message;
-                    if (this.config_uid && uid === this.config_uid && data ) {
-                        this.update_config(data);
+                    if (uid && data) {
+                        if (uid === this.config_uid) {
+                            this.update_config(data);
+                        } else if (data.id) {
+                            await this.evict_dependent(uid, data.id);
+                        }
                     } else {
-                        console.log(`unknown message ${JSON.stringify(message)}`);
+                        console.error('unknown upsert message', JSON.stringify(message));
                     }
                 }
                 break;
             case 'delete': {
-                const {uid, data} = message;
-                    if (this.config_uid && uid === this.config_uid) {
-                        this.del_config(data.name);
+                    const {uid, data} = message;
+                    if (uid && data) {
+                        if (uid === this.config_uid) {
+                            this.del_config(data.name);
+                        } else {
+                            await this.evict_dependent(uid, data.id);
+                        }
                     } else {
-                        console.log(`unknown message ${JSON.stringify(message)}`);
+                        console.error('unknown delete message', JSON.stringify(message));
                     }
                 }
                 break;
@@ -186,24 +212,33 @@ class PfapiApp extends HttpRequest {
         
         await this.publish({action: 'keep-alive', now_ms});
 
-        this.local_invalidate = new LocalInvalidate(this.redis_cache, this.local_cache);
-        await this.local_invalidate.start();
-
         this.throttle = new HttpThrottle(this, this.redis_cache, this.local_cache);
 
         this.run_maintenance();
 
         this.strapi.PfapiApp = this;
 
-        if (this.config_uid) this.subscribe_upsertdel_events(this.config_uid);
+        if (this.config_uid) this.subscribe_db_events(this.config_uid, false);
+    }
+
+    async evict_dependent(uid, id) {
+
+        const key = get_dependency_key({uid, id});
+        const keys = await this.redis_cache.get_dependencies(key);
+
+        if (keys.length === 0) return;
+
+        for (const key of keys) {
+            const cacheable = new Cacheable({key});
+            await cacheable.del(this.local_cache, this.redis_cache);
+        }
+        this.publish({action: 'evict-local-cache', keys})
     }
 
     after_upsert(event) {
+
         if (!event.result.hasOwnProperty('publishedAt') || event.result.publishedAt) {
             const uid = event.model.uid;
-            if (event.action === 'afterUpdate' && event.params.data.name) {
-                this.publish({uid, action: 'delete', data: event.params.data});
-            }
             this.publish({uid, action: 'upsert', data: event.result});
         } else if (event.params.data.publishedAt === null) {
             const uid = event.model.uid;
@@ -212,13 +247,22 @@ class PfapiApp extends HttpRequest {
     }
 
     after_delete(event) {
+
         if (!event.result.hasOwnProperty('publishedAt') || event.result.publishedAt) {
             const uid = event.model.uid;
             this.publish({uid, action: 'delete', data: event.result});
         }
     }
 
-    subscribe_upsertdel_events(uid) {
+    subscribe_db_events(uid, publish = true) {
+
+        if (this.subscribe_db_uids.includes(uid)) return;
+        
+        this.subscribe_db_uids.push(uid);
+
+        if (publish) this.publish({uid, action: 'subscribe-db-event'});
+
+        console.log('subscribe_db_events', uid);
 
         this.strapi.db.lifecycles.subscribe({
 
@@ -238,30 +282,30 @@ class PfapiApp extends HttpRequest {
 
     run_maintenance() {
 
+        this.started_at = Date.now();;
+
         this.update_timer = setInterval(async () => {
 
             const now_ms = Date.now();
 
             await this.publish({action: 'keep-alive', now_ms});
-            for (const [uuid, timestamp] of Object.entries(this.instances)) {
-                if (now_ms - timestamp > 3 * this.run_maintenance_interval) delete this.instances[uuid];
+
+            for (let i = 0; i < this.instances.length; i++) {
+                const { timestamp } = this.instances[i];
+                if (now_ms - timestamp > 3 * this.run_maintenance_interval) {
+                    this.instances.splice(i, 1);
+                }
             }
 
-            if (this.is_master()) {
-                if (!this.refresh_queue) {
-                    console.log('start refresh queue', this.uuid);
-                    this.refresh_queue = new RefreshQueue(this.redis_cache, this.local_cache);
-                    await this.refresh_queue.start();
-                    this.eviction_watch = new EvictionWatch(this.redis_cache, this.refresh_queue);
-                    await this.eviction_watch.start();
-                }
-            } else {
-                if (this.refresh_queue) {
-                    console.log('stop  eviction watch and refresh queue', this.uuid)
-                    await this.eviction_watch.stop();
-                    this.eviction_watch = null;
-                    await this.refresh_queue.stop();
-                    this.refresh_queue = null;
+            if (now_ms - this.started_at > this.run_maintenance_interval * 3) {
+                if (this.is_master()) {
+                    if (!this.refresh_queue) {
+                        await this.start_refresh_queue()
+                    }
+                } else {
+                    if (this.refresh_queue) {
+                        await this.stop_refresh_queue();
+                    }
                 }
             }
 
@@ -274,14 +318,36 @@ class PfapiApp extends HttpRequest {
 
     }
 
+    async start_refresh_queue() {
+
+        console.log('start expires watch  and refresh queue', this.uuid);
+
+        this.refresh_queue = new RefreshQueue(this.redis_cache, this.local_cache);
+        await this.refresh_queue.start();
+        this.expires_watch = new ExpiresWatch(this.redis_cache, this.refresh_queue);
+        await this.expires_watch.start();
+    }
+
+    async stop_refresh_queue() {
+
+        console.log('stop expires watch and refresh queue', this.uuid)
+
+        await this.expires_watch.stop();
+        this.expires_watch = null;
+        await this.refresh_queue.stop();
+        this.refresh_queue = null;
+    }
+
     is_master() {
-        const uuids = Object.keys(this.instances);
-        if (uuids.length === 0) return false;
-        return this.uuid === uuids.sort()[0];
+        if (this.instances.length === 0) return false;
+        if 
+        return this.uuid === this.instances[0].uuid;
     }
 
     async stop() {
+
         await this.publish({action: 'shutdown'});
+
         if (this.update_timer) {
             clearInterval(this.update_timer);
             this.update_timer = null;
@@ -342,7 +408,7 @@ class PfapiApp extends HttpRequest {
         if (!item || !item.name) return false;
 
         const key = this.get_config_key(item.name);
-        const data = this.merge_and_clean_data(item);
+        const data = this.normalize_config_data(item);
         const cacheable = new Cacheable({key, data, permanent: true});
         if (item.name === this.constructor.name) {
             this.config = data;
@@ -386,20 +452,20 @@ class PfapiApp extends HttpRequest {
 
         if (!this.config_uid) return {};
 
-        const result = await this.strapi.query(this.config_uid).findOne({where: {name, publishedAt: {$ne: null}}}) || {};
+        const result = await this.strapi.query(this.config_uid).findOne({
+            where: {name, publishedAt: {$ne: null}}
+        }) || {};
 
-        return this.merge_and_clean_data(result);
+        return this.normalize_config_data(result);
     }
 
-    merge_and_clean_data({name, data = {}, ...rest}) {
+    normalize_config_data({name, data = {}, ...rest}) {
 
         if (!rest || Object.keys(rest).length === 0) return data;
-
         for (const [k, v] of Object.entries(rest)) {
-            if (v === null || ignore_keys.includes(k)) continue;
+            if (v === null || config_ignore_keys.includes(k)) continue;
             data[k] = v;
         }
-
         return data;
     }
 }

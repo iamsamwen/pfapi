@@ -19,7 +19,7 @@ module.exports = async (ctx, params, composite) => {
 
     const now_ms = Date.now();
 
-    const result = { params: [], aggregated_params: {}, data, timestamp: now_ms, modified_time: now_ms, ttl: 1800000 };
+    const result = { params: [], data, timestamp: now_ms, modified_time: now_ms, ttl: 1800000 };
 
     const promises = [];
 
@@ -36,7 +36,7 @@ module.exports = async (ctx, params, composite) => {
         await Promise.all(promises);
     }
 
-    composite.transform(data, result.aggregated_params);
+    composite.transform(data, params);
 
     const { http_response } = global.PfapiApp;
 
@@ -76,13 +76,6 @@ async function run_refreshable(key, params, refreshable, result) {
         
         result.data[key] = cacheable.data;
         result.params.push(cacheable.key);
-
-        for (const [key, value] of Object.entries(cacheable.params)) {
-            if (value === undefined) {
-                continue;
-            }
-            result.aggregated_params[key] = value;
-        }
 
     } catch (err) {
         if (err.message.startsWith('Not Found')) {

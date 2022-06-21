@@ -30,7 +30,7 @@ async function on_invalidate(redis, {prefix, on_event, bcast = true, noloop = tr
     }
     
     subscribe_client.on('message', async (channel, data) => {
-        //console.log({channel, data});
+        //console.log('on_invalidate', {channel, data});
         if (channel !== invalidate_channel) return;
         if (!data.startsWith(prefix)) return;
         const redis_keys = data.split(',');

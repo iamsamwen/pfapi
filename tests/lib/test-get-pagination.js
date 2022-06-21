@@ -12,7 +12,14 @@ describe('Test get-pagination', () => {
     it('empty', async () => {
         const pagination = get_pagination();
         //console.log(pagination);
-        expect(pagination).to.deep.equal({ total: 0, pageSize: 20, page: 1, pageCount: 0 });
+        // without total, so only page and pageSize included
+        expect(pagination).to.deep.equal({ page: 1, pageSize: 20 });
+    });
+
+    it('with total', async () => {
+        const pagination = get_pagination({total: 100});
+        //console.log(pagination);
+        expect(pagination).to.deep.equal({ page: 1, pageSize: 20, pageCount: 5, total: 100 });
     });
 
     it('string', async () => {

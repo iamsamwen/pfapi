@@ -97,11 +97,11 @@ class Cacheable {
      * 
      * @param {*} local_cache an instance of LocalCache
      * @param {*} redis_cache an instance of RedisCache
+     * @param {*} ignore_expire ignore EXP::key invalidation
      */
-    async del(local_cache, redis_cache) {
-        const result = await redis_cache.delete(this);
-        local_cache.delete(this);
-        return result;
+    async del(local_cache, redis_cache, ignore_expire = false) {
+        if (redis_cache) await redis_cache.delete(this, ignore_expire);
+        if (local_cache) local_cache.delete(this);
     }
 
     get is_refreshable() {
@@ -162,7 +162,6 @@ class Cacheable {
             }
             this.key = get_cache_key(this);
         }
-
         if (!this.checksum && this.hasOwnProperty('data')) {
             this.checksum = get_checksum(this.data);
         }
@@ -367,10 +366,17 @@ class Cacheable {
         }
         if (result.dependencies && result.dependencies.length > 0) {
             this.dependent_keys = [];
-            for (const dependency of result.dependencies) {
-                if (!dependency) continue;
-                const key = get_dependency_key(dependency);
+            const uids = [];
+            for (const {uid, id} of result.dependencies) {
+                if (!uid) continue;
+                if (!uids.includes(uid)) uids.push(uid)
+                const key = get_dependency_key({uid, id});
                 if (key) this.dependent_keys.push(key);
+            }
+            if (global.PfapiApp) {
+                for (const uid of uids) {
+                    global.PfapiApp.subscribe_db_events(uid);
+                }
             }
         }
         return changed;

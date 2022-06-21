@@ -38,7 +38,7 @@ class Refreshable {
     /**
      * the returned result:
      * 
-     * 1) it is params in Cacheable, saved in cache as key info, for refresh purpose
+     * 1) it is the params in Cacheable, saved in cache as key info, for refresh purpose
      * 2) cache key is generated from { params, module_path }
      * 3) get_data(params) uses the result
      * 

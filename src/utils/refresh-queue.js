@@ -36,11 +36,11 @@ class RefreshQueue {
         this.interval_handle = setInterval(async () => {
             if (this.stopped) return;
             const queue_size = await this.get_refresh_queue_size();
+            //console.log('refresh priority queue size', queue_size);
             if (queue_size > 0) {
-                console.log('refresh priority queue size', queue_size);
                 const start_ms = Date.now();
                 // process from top
-                for (let size = Math.round(queue_size * this.config.size_ratio); size > 0;) {
+                for (let size = Math.ceil(queue_size * this.config.size_ratio); size > 0;) {
                     const max_refresh_size = size > this.config.batch_size ? this.config.batch_size : size;
                     await this.do_refresh(max_refresh_size);
                     // max time for refresh
@@ -89,7 +89,6 @@ class RefreshQueue {
     async get_key_score_argv(score_keys, key) {
         const cacheable = new Cacheable({key});
         const score = await cacheable.calculate_priority_score(this.redis_cache);
-        console.log({score});
         score_keys.push(score, key);
     }
     

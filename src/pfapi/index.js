@@ -348,7 +348,6 @@ class PfapiApp extends HttpRequest {
 
     is_master() {
         if (this.instances.length === 0) return false;
-        if 
         return this.uuid === this.instances[0].uuid;
     }
 

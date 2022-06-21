@@ -118,24 +118,7 @@ class PfapiApp extends HttpRequest {
         //console.log('receive:', {message, from});
         switch(message.action) {
             case 'keep-alive':
-                let instance = {uuid: from, timestamp: message.now_ms};
-                if (this.instances.length > 0) {
-                    if (this.instances.find(x => x.uuid === from)) {
-                        instance = null;
-                    } else {
-                        for (let i = 0; i < this.instances.length; i++) {
-                            const { uuid, timestamp } = this.instances[i];
-                            if (instance.timestamp < timestamp) {
-                                this.instances.splice(i, 0, instance);
-                                instance = null;
-                            } else (instance.timestamp === timestamp && from > uuid) {
-                                this.instances.splice(i, 0, instance);
-                                instance = null;
-                            }
-                        }
-                    }
-                }
-                if (instance) this.instances.push(instance);
+                this. update_instances(message, from);
                 break;
             case 'shutdown':
                 const index = this.instances.findIndex(x => x.uuid === from);
@@ -148,40 +131,65 @@ class PfapiApp extends HttpRequest {
                 break;
             case 'evict-local-cache': 
                 if (from !== this.uuid && message.keys) {
-                    for (const key of message.keys) {
-                        this.local_cache.delete({key});
-                    }
+                    for (const key of message.keys) this.local_cache.delete({key});
                 }
                 break;
-            case 'upsert': {
-                    const {uid, data} = message;
-                    if (uid && data) {
-                        if (uid === this.config_uid) {
-                            this.update_config(data);
-                        } else if (data.id) {
-                            await this.evict_dependent(uid, data.id);
-                        }
-                    } else {
-                        console.error('unknown upsert message', JSON.stringify(message));
-                    }
-                }
+            case 'upsert':
+                await this.upsert_db(message);
                 break;
-            case 'delete': {
-                    const {uid, data} = message;
-                    if (uid && data) {
-                        if (uid === this.config_uid) {
-                            this.del_config(data.name);
-                        } else {
-                            await this.evict_dependent(uid, data.id);
-                        }
-                    } else {
-                        console.error('unknown delete message', JSON.stringify(message));
-                    }
-                }
+            case 'delete': 
+                await this.delete_db(message);
                 break;
             default:
                 console.log(`unknown action ${message.action}`);
         }
+    }
+
+    async upsert_db(message) {
+        const {uid, data} = message;
+        if (uid && data) {
+            if (uid === this.config_uid) {
+                this.update_config(data);
+            } else if (data.id) {
+                await this.evict_dependent(uid, data.id);
+            }
+        } else {
+            console.error('unknown upsert message', JSON.stringify(message));
+        }
+    }
+
+    async delete_db(message) {
+        const {uid, data} = message;
+        if (uid && data) {
+            if (uid === this.config_uid) {
+                this.del_config(data.name);
+            } else {
+                await this.evict_dependent(uid, data.id);
+            }
+        } else {
+            console.error('unknown delete message', JSON.stringify(message));
+        }
+    }
+
+    update_instances(message, from) {
+        let instance = {uuid: from, timestamp: message.now_ms};
+        if (this.instances.length > 0) {
+            if (this.instances.find(x => x.uuid === from)) {
+                instance = null;
+            } else {
+                for (let i = 0; i < this.instances.length; i++) {
+                    const { uuid, timestamp } = this.instances[i];
+                    if (instance.timestamp < timestamp) {
+                        this.instances.splice(i, 0, instance);
+                        instance = null;
+                    } else if (instance.timestamp === timestamp && from > uuid) {
+                        this.instances.splice(i, 0, instance);
+                        instance = null;
+                    }
+                }
+            }
+        }
+        if (instance) this.instances.push(instance);
     }
 
     async publish(message) {

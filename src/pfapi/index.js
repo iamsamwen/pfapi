@@ -328,7 +328,7 @@ class PfapiApp extends HttpRequest {
 
     async start_refresh_queue() {
 
-        console.log('start expires watch  and refresh queue', this.uuid);
+        console.log('start expires watch and refresh queue', this.uuid);
 
         this.refresh_queue = new RefreshQueue(this.redis_cache, this.local_cache);
         await this.refresh_queue.start();

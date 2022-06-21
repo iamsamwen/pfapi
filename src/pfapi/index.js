@@ -146,7 +146,9 @@ class PfapiApp extends HttpRequest {
     }
 
     async upsert_db(message) {
+
         const {uid, data} = message;
+
         if (uid && data) {
             if (uid === this.config_uid) {
                 this.update_config(data);
@@ -159,7 +161,9 @@ class PfapiApp extends HttpRequest {
     }
 
     async delete_db(message) {
+
         const {uid, data} = message;
+
         if (uid && data) {
             if (uid === this.config_uid) {
                 this.del_config(data.name);
@@ -172,7 +176,9 @@ class PfapiApp extends HttpRequest {
     }
 
     update_instances(message, from) {
-        let instance = {uuid: from, timestamp: message.now_ms};
+
+        let instance = {uuid: from, timestamp: message.timestamp};
+
         if (this.instances.length > 0) {
             if (this.instances.find(x => x.uuid === from)) {
                 instance = null;
@@ -189,6 +195,7 @@ class PfapiApp extends HttpRequest {
                 }
             }
         }
+
         if (instance) this.instances.push(instance);
     }
 
@@ -296,7 +303,7 @@ class PfapiApp extends HttpRequest {
 
             const now_ms = Date.now();
 
-            await this.publish({action: 'keep-alive', now_ms});
+            await this.publish({action: 'keep-alive', timestamp: this.started_at, now_ms});
 
             for (let i = 0; i < this.instances.length; i++) {
                 const { timestamp } = this.instances[i];

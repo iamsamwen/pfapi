@@ -7,17 +7,20 @@ module.exports = {
         // all numbers are in milliseconds
     
         // time to live for data 
-        ttl: 900001,
+        ttl: 900000,
     
         // time to live for info
         info_ttl: 3600000 * 24,
     
-        // time to live left to start refresh
-        early_refresh: 70000,
-    
         // when it starts to consider as slow
         slow_duration: 500,
+
+        // data age_ms since last update to start refresh
+        early_refresh_start: 70000,
     
+        // if duration is more than early_refresh_duration, start
+        early_refresh_duration: 1000,
+
         // when to enable refresh
         refresh_duration: 200,
     

@@ -6,7 +6,7 @@ const get_class_config = require('../lib/get-class-config');
 /**
  * redis pub sub with mechanism to exclude message from self
  */
-class PubSub {
+class RedisPubsub {
 
     constructor(redis, config = {}, uuid = uuidv4()) {
         if (!redis) {
@@ -18,7 +18,7 @@ class PubSub {
     }
 
     async start() {
-        [ this.pubsub_client, this.client_id ] = await this.on_pubsub(this.channel_name, async (event) => {
+        this.pubsub_client = await this.on_pubsub(this.channel_name, async (event) => {
             const json = JSON.parse(event);
             if (this.exclude_self && json.from === this.uuid) return;
             await this.on_receive(json.message, json.from);
@@ -46,7 +46,6 @@ class PubSub {
 
     async on_pubsub(channel_name, on_event) {
         const subscribe_client = await this.redis.get_client(true);
-        const id = await subscribe_client.client('id');
         const subscribe_result = await subscribe_client.subscribe(channel_name);
         if (subscribe_result !== 1) {
             console.error('on_pubsub, failed to subscribe');
@@ -54,10 +53,10 @@ class PubSub {
             return [];
         }
         subscribe_client.on('message', async (channel, data) => {
-            if (channel !== channel_name) return;
+            //console.log({channel, data})
             await on_event(data);
         });
-        return [subscribe_client, id];
+        return subscribe_client;
     }
     
     async turnoff_pubsub(subscribe_client, channel) {
@@ -65,4 +64,4 @@ class PubSub {
     }
 }
 
-module.exports = PubSub;
+module.exports = RedisPubsub;

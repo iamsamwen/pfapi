@@ -7,7 +7,7 @@ const expect = chai.expect;
 
 // NODE_ENV=test mocha --reporter spec tests/lib/test-merge-filters
 
-describe('Test get-checksum', () => {
+describe('Test merge-filters', () => {
 
     it('empty', async () => {
 

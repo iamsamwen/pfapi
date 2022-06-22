@@ -1,8 +1,8 @@
 'use strict';
 
-const { PubSub } = require('../');
+const { RedisPubsub } = require('../');
 
-class EventPubSub extends PubSub {
+class EventPubSub extends RedisPubsub {
 
     constructor(app, redis_client, uuid) {
         super(redis_client, {}, uuid);

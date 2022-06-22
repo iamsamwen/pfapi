@@ -10,25 +10,40 @@ class RedisBase {
     }
 
     /**
-     * if the primary client doesn't exist, it alway creates it first.
-     * if new_client is false, it returns the primary client. 
-     * if new_client is true, it always returns a newly created client.
+     * 
+     * @param {*} option
+     * 
+     * if option is false, it returns this.clients[0] as the primary client. 
+     * if option is not false, it returns a newly created client.
+     * 
      * the new client may use for subscription
      * 
-     * @param {*} new_client 
-     * @returns Redis Cache
+     * option can be callback function after connected
+     * 
+     * primary client has no on connect callback
+     * 
+     * if the primary client doesn't exist, it alway creates it first.
+     * 
+     * @returns IORedis client
      */
-    async get_client(new_client = false) {
-        if (!this.primary_client) {
-            this.primary_client = await this.create_new_client();
+    async get_client(option = false) {
+        if (this.clients.length === 0) {
+            await this.create_new_client();
         }
-        if (!new_client) {
-            return this.primary_client;
+        if (!option) {
+            return this.clients[0].client;
         } else {
-            const client = await this.create_new_client();
-            this.clients.push(client);
-            return client;
+            await this.create_new_client(option !== true ? option : undefined);
+            return this.clients[this.clients.length - 1].client;
         }
+    }
+
+    async get_client_id(client) {
+        const item = this.clients.find(x => x.client === client);
+        if (!item) return null;
+        if (item.id) return item.id;
+        item.id = await client.client('id');
+        return item.id;
     }
 
     /**
@@ -53,17 +68,26 @@ class RedisBase {
      * @returns 
      */
     async close(client) {
-        if (client) {
+        if (this.clients.length === 0) return;
+        if (client && client !== this.clients[0].client) {
             return await this.close_client(client);
         } else {
-            if (this.primary_client) {
-                await this.close_client(this.primary_client);
-            }
-            for (const client of this.clients) {
+            while (this.clients.length > 0) {
+                const { client } = this.clients.pop();
                 await this.close_client(client);
             }
         }
     }
+
+    async close_client(client) {
+        await client.disconnect(false);
+        await client.quit();
+        const index = this.clients.findIndex(x => x.client === client);
+        if (index > 0) {
+            this.clients.splice(index, 1);
+        }
+    }
+
 
     get is_cluster() {
         return this.cluster;
@@ -103,19 +127,6 @@ class RedisBase {
         return true;
     }
 
-    async close_client(client) {
-        await client.disconnect(false);
-        await client.quit();
-        if (client === this.primary_client) {
-            this.primary_client = null;
-        } else {
-            const index = this.clients.indexOf(client);
-            if (index !== -1) {
-                this.clients.splice(index, 1);
-            }
-        }
-    }
-
     parse_uri(uri) {
         let {protocol, host, username, password, port, pathname } = new URL(uri);
         if (protocol !== 'redis:') {
@@ -136,7 +147,7 @@ class RedisBase {
         }
     }
 
-    create_new_client() {
+    create_new_client(on_connected) {
         return new Promise(resolve => {
             let client;
             if (Array.isArray(this.config)) {
@@ -144,10 +155,12 @@ class RedisBase {
                 client = new IORedis.Cluster(this.config, {
                     scaleReads: 'all',
                     enableReadyCheck: true,
-                    slotsRefreshTimeout: 10000,
+                    autoResubscribe: !on_connected,
+                    slotsRefreshTimeout: 500,
                     tls: {},
                     dnsLookup: (address, callback) => callback(null, address), 
-                    clusterRetryStrategy: (times) => { 
+                    clusterRetryStrategy: (times) => {
+                        if (times === 1) return 1000;
                         return Math.min(times * 600, 3000);
                     }
                 });
@@ -155,18 +168,28 @@ class RedisBase {
                 this.cluster = false;
                 client = new IORedis({...this.config,
                     enableReadyCheck: true,
+                    autoResubscribe: !on_connected,
                     retryStrategy: (times) => {
+                        if (times === 1) return 500;
                         return Math.min(times * 600, 3000);
                     }
                 });
             }
+            const index = this.clients.length;
+            this.clients.push({client});
             client.on('error', (err) => {
+                const id = this.clients[index].id;
+                this.clients[index].id = null;
                 client.disconnect(true);
-                console.error(err.message);
+                console.error(err.message, {index, id});
             });
-            client.once('ready', () => {
-                resolve(client);
-            });       
+            client.on('connect', async () => {
+                const id = await client.client('id');
+                this.clients[index].id = id;
+                //console.log('on connect', {index, id});
+                if (index > 0 && on_connected) await on_connected(client);
+                resolve();
+            })   
         });
     }
 }

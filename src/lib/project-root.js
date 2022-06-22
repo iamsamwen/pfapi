@@ -74,6 +74,7 @@ function find_files(dir, files, not_files) {
         if (found_all) break;
         dir = node_path.dirname(dir);
     }
+    
     if (!dir || dir === root) return null;
     return dir;
 }

@@ -206,11 +206,11 @@ class PfapiApp extends HttpRequest {
     async start() {
         
         Object.assign(this, get_class_config(this, await this.fetch_config(this.constructor.name)));
+    
+        this.local_cache = new LocalCache(await this.fetch_config('LocalCache'));
 
         this.redis_cache = new RedisCache(process.env.REDIS_URI);
-    
-        this.local_cache = new LocalCache(this.redis_cache, await this.fetch_config('LocalCache'));
-        
+
         global.PfapiApp = this;
 
         await this.update_all_configs();
@@ -314,13 +314,9 @@ class PfapiApp extends HttpRequest {
 
             if (now_ms - this.started_at > this.run_maintenance_interval * 3) {
                 if (this.is_master()) {
-                    if (!this.refresh_queue) {
-                        await this.start_refresh_queue()
-                    }
+                    if (!this.refresh_queue) await this.start_refresh_queue()
                 } else {
-                    if (this.refresh_queue) {
-                        await this.stop_refresh_queue();
-                    }
+                    if (this.refresh_queue) await this.stop_refresh_queue();
                 }
             }
 

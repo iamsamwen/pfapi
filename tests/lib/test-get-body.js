@@ -4,21 +4,25 @@ const chai = require('chai');
 const get_body = require('../../src/lib/get-body');
 
 const expect = chai.expect;
+const assert = chai.assert;
 
 // NODE_ENV=test mocha --reporter spec tests/lib/test-get-body
 
 describe('Test get-body', () => {
 
     it('undefined', async () => {
-        const body = get_body(undefined);
-        //console.log(body);
-        expect(body).equals('');
+        try {
+            get_body(undefined);
+            assert(false, 'failed, should not get to here');
+        } catch(err) {
+            expect(err.message).equals('data is undefined');
+        }
     });
 
     it('null', async () => {
         const body = get_body(null);
         //console.log(body);
-        expect(body).equals('');
+        expect(body).equals('null');
     });
 
     it('string', async () => {

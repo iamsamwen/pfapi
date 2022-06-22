@@ -6,6 +6,7 @@ const get_checksum = require('../lib/get-checksum');
 const get_cache_key = require('../lib/get-cache-key');
 const get_class_config = require('../lib/get-class-config');
 const get_body = require('../lib/get-body');
+const get_value = require('../lib/get-value');
 const get_dependency_key = require('../lib/get-dependency-key');
 const update_params = require('../lib/update-params');
 
@@ -51,7 +52,7 @@ class Cacheable {
             }
         }
         if (await this.fetch_data(redis_cache)) {
-            if (local_cache && this.data !== undefined && this.data !== null) {
+            if (local_cache && this.data !== undefined) {
                 local_cache.save(this);
             }
             if (process.env.NODE_ENV === 'test') this.from = 'fetch';
@@ -65,23 +66,26 @@ class Cacheable {
      *  
      * @param {*} local_cache an instance of LocalCache
      * @param {*} redis_cache an instance of RedisCache
+     * @param {*} skip_redis go directly to call refreshable
      * @returns true if succeeded, otherwise false
      */
-    async update(local_cache, redis_cache) {
+    async update(local_cache, redis_cache, skip_redis = false) {
         if (!local_cache && !redis_cache) {
             return false;
         }
-        const previous_checksum = this.checksum;
-        if (await redis_cache.get_cacheable(this)) {
-            // local_refreshed by other instances
-            if (previous_checksum !== this.checksum) {
-                local_cache.save(this);
-                if (process.env.NODE_ENV === 'test') this.from = 'redis';
-                return true;
+        if (!skip_redis && redis_cache) {
+            const previous_checksum = this.checksum;
+            if (await redis_cache.get_cacheable(this)) {
+                // redis may updated by other instances
+                if (previous_checksum !== this.checksum) {
+                    local_cache.save(this);
+                    if (process.env.NODE_ENV === 'test') this.from = 'redis';
+                    return true;
+                }
             }
         }
         if (await this.fetch_data(redis_cache, local_cache) && 
-            this.data !== undefined && this.data !== null) {
+            this.data !== undefined) {
             if (local_cache) local_cache.save(this);
             if (process.env.NODE_ENV === 'test') this.from = 'fetch';  
             if (local_cache) local_cache.save(this);
@@ -116,6 +120,10 @@ class Cacheable {
     get plain_object() {
         const plain_object = {key: this.key, data: this.data};
         for (const key of info_keys) {
+            if (key === 'ttl') {
+                plain_object[key] = this.data_ttl;
+                continue;
+            }
             if (this.hasOwnProperty(key)) {
                 plain_object[key] = this[key];
             }
@@ -173,19 +181,7 @@ class Cacheable {
         for (const key in result) {
             if (!info_keys.includes(key)) continue;
             if (key === 'ttl' && this.ttl) continue;
-            let value = result[key];
-            if (typeof value === 'string' && value !== '') {
-                if (!isNaN(value)) value = Number(value);
-                else if ((value.startsWith('{') && value.endsWith('}')) ||
-                    (value.startsWith('[') && value.endsWith(']'))) {
-                    try {
-                        value = JSON.parse(value);
-                    } catch(err) {
-                        //console.error(err.message);
-                    }
-                }
-            }
-            this[key] = value;
+            this[key] = get_value(result[key]);
         }
         if (this.module_path && !this.refreshable) {
             this.refreshable = new Refreshable(this.module_path);
@@ -195,7 +191,7 @@ class Cacheable {
     // helper function, prepare for redis set data
     //
     get data_value() {
-        if (this.data === undefined || this.data === null) {
+        if (this.data === undefined) {
             throw new Error('data is empty');
         }
         return get_body(this.data);
@@ -204,23 +200,7 @@ class Cacheable {
     // helper function, parse result from redis get data
     //
     set data_value(value) {
-        if (typeof value === 'string' && value !== '') {
-            if (['true', 'false'].includes(value)) {
-                value = (value === 'true');
-            } else if (!isNaN(value)) {
-                value = Number(value);
-            } else if (
-                (value.startsWith('{') && value.endsWith('}')) ||
-                (value.startsWith('[') && value.endsWith(']'))
-            ) {
-                try {
-                    value = JSON.parse(value);
-                } catch(err) {
-                    //console.error(err.message);
-                }
-            }
-        }
-        this.data = value;
+        this.data = get_value(value);
     }
 
     // helper function, prepare hmset args for info
@@ -283,14 +263,8 @@ class Cacheable {
             this.refreshable = new Refreshable(this.module_path);
         }
         await this.get_data();
-        if (this.data === null) {
-            this.ttl = 0;
-        }
         if (redis_cache) {
             await redis_cache.set_cacheable(this);
-        } else {
-            this.ttl = 0;
-            if (this.permanent) this.permanent = false;
         }
         return true;
     }
@@ -324,10 +298,8 @@ class Cacheable {
             console.error('early_refresh, missing timestamp and/or duration');
             return false;
         }
-        if (this.duration < this.config.slow_duration) return false;
-        const ttl = this.data_ttl;
-        const left_ms = this.timestamp + ttl - Date.now();
-        if (left_ms > this.config.early_refresh) return false;
+        if (this.duration < this.early_refresh_duration) return false;
+        if (Date.now() - this.timestamp > this.config.early_refresh_start) return false;
         const handle = setTimeout(async () => {
             if (await this.fetch_data(redis_cache)) {
                 if (process.env.NODE_ENV === 'test') this.from = 'early_refresh';
@@ -365,18 +337,22 @@ class Cacheable {
             }
         }
         if (result.dependencies && result.dependencies.length > 0) {
-            this.dependent_keys = [];
-            const uids = [];
-            for (const {uid, id} of result.dependencies) {
-                if (!uid) continue;
-                if (!uids.includes(uid)) uids.push(uid)
-                const key = get_dependency_key({uid, id});
-                if (key) this.dependent_keys.push(key);
-            }
-            if (global.PfapiApp) {
-                for (const uid of uids) {
-                    global.PfapiApp.subscribe_db_events(uid);
+            try {
+                this.dependent_keys = [];
+                const uids = [];
+                for (const {uid, id} of result.dependencies) {
+                    if (!uid) continue;
+                    if (!uids.includes(uid)) uids.push(uid)
+                    const key = get_dependency_key({uid, id});
+                    if (key) this.dependent_keys.push(key);
                 }
+                if (global.PfapiApp) {
+                    for (const uid of uids) {
+                        global.PfapiApp.subscribe_db_events(uid);
+                    }
+                }
+            } catch(err) {
+                console.error(err.message);
             }
         }
         return changed;

@@ -8,7 +8,7 @@ const expect = chai.expect;
 
 // NODE_ENV=test mocha --timeout 10000 --reporter spec tests/lib/test-redis-base
 
-describe('Test Redis Base class', () => {
+describe('Test redis-base', () => {
 
     it('simple and list_clients', async () => {
 
@@ -67,30 +67,44 @@ describe('Test Redis Base class', () => {
 
         const redis = new RedisBase();
         const client = await redis.get_client();
-        expect(redis.primary_client).equals(client);
-        const client1 = await redis.get_client(true);
         expect(redis.clients.length).equals(1);
+        expect(redis.clients[0].client).equals(client);
+        const client1 = await redis.get_client(true);
+        expect(redis.clients.length).equals(2);
         await redis.close(client1);
-        expect(redis.clients.length).equals(0);
-        expect(redis.primary_client).is.not.null;
+        expect(redis.clients.length).equals(1);
+        expect(redis.clients[0].client).equals(client);
         
         await redis.close();
 
-        expect(redis.primary_client).is.null;
+        //console.log(redis.clients);
+        expect(redis.clients.length).equals(0);
     });
 
-    it('restart redis', async () => {
+    it('get_client_id and restart redis', async () => {
 
         const redis = new RedisBase();
         
         const client1 = await redis.get_client();
+        const client1_id = await redis.get_client_id(client1);
         const client2 = await redis.get_client(true);
-        
+        const client2_id = await redis.get_client_id(client2);
+
+        //console.log({client1_id, client2_id});
+        expect(client1_id).not.equal(client2_id);
+
         await client1.set('key1', 'test value1');
         await client2.set('key2', 'test value2');
         
         await run_script(__dirname + '/../helpers/restart-redis');
         
+        const client1_id2 = await redis.get_client_id(client1);
+        const client2_id2 = await redis.get_client_id(client2);
+
+        //console.log({client1_id2, client2_id2});
+        expect(client1_id).not.equal(client1_id2);
+        expect(client2_id).not.equal(client2_id2);
+
         await client1.set('key1', 'test value3');
         await client2.set('key2', 'test value4');
 

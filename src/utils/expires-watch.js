@@ -10,7 +10,7 @@ const { on_invalidate, off_invalidate } = require('../lib/redis-invalidate');
 class ExpiresWatch {
 
     constructor(redis, refresh_queue) {
-        if (!redis) {
+        if (!redis || !refresh_queue) {
             throw new Error('missing required redis and/or refresh_queue');
         }
         this.redis = redis;
@@ -62,7 +62,7 @@ class ExpiresWatch {
     // support functions
 
     async on_exp_invalidate(on_event) {
-        const {subscribe_client, id} = await on_invalidate(this.redis, {prefix: 'EXP::', noloop: false, on_event});
+        const {subscribe_client, id} = await on_invalidate(this.redis, on_event, {prefix: 'EXP::', noloop: false});
         if (subscribe_client) {
             this.exp_invalidate_id = id;
             return subscribe_client;
@@ -80,7 +80,7 @@ class ExpiresWatch {
     }
 
     async on_data_invalidate(on_event) {
-        const {subscribe_client, id} = await on_invalidate(this.redis, {prefix: 'DATA::', noloop: true, on_event});
+        const {subscribe_client, id} = await on_invalidate(this.redis, on_event, {prefix: 'DATA::', noloop: true});
         if (subscribe_client) {
             this.data_invalidate_id = id;
             return subscribe_client;

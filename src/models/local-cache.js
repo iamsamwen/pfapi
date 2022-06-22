@@ -10,8 +10,7 @@ const get_class_config = require('../lib/get-class-config');
 
 class LocalCache {
 
-    constructor(redis_cache, config = {}) {
-        if (redis_cache) this.redis_cache = redis_cache;
+    constructor(config = {}) {
         Object.assign(this, get_class_config(this, config));
         this.cache_data = new Map();
         this.maintenance();
@@ -32,9 +31,11 @@ class LocalCache {
         const { timestamp = now_ms } = cacheable;
         const ttl = cacheable.data_ttl - (now_ms - timestamp);
         if (ttl <= 0) return false;
-        const expires_at = now_ms + (cacheable.permanent ? ttl : ttl < this.default_ttl ? ttl : this.default_ttl );
-        //console.log(cacheable.plain_object)
-        this.cache_data.set(cacheable.key, {expires_at, ...cacheable.plain_object});
+        const plain_object = { ...cacheable.plain_object };
+        if (!this.permanent) {
+            plain_object.expires_at = now_ms + ( ttl < this.default_ttl ? ttl : this.default_ttl );
+        }
+        this.cache_data.set(cacheable.key, plain_object);
         return true;
     }
 

@@ -58,8 +58,12 @@ class RefreshQueue {
     
     async on_refresh(key) {
         console.log('on_refresh receive', key);
-        const cacheable = new Cacheable({key});
-        return await cacheable.fetch_data(this.redis_cache, this.local_cache);
+        try {
+            const cacheable = new Cacheable({key});
+            return await cacheable.fetch_data(this.redis_cache, this.local_cache);
+        } catch(err) {
+            console.error(err);
+        }
     }
 
     async do_refresh(max_refresh_size) {

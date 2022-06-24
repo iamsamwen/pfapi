@@ -55,7 +55,7 @@ class HttpRequest {
         const end_time = process.hrtime.bigint();
         const ms = (Number(end_time - start_time) / 1000000).toFixed(2);
 
-        ctx.set('x-response-time', `${ms} ms`);
+        ctx.set('X-Response-Time', `${ms} ms`);
     }
 
     get local_cache() {

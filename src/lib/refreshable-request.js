@@ -2,7 +2,9 @@
 
 const Cacheable = require('../models/cacheable');
 
-module.exports = async (ctx, params, refreshable, {http_response, local_cache, redis_cache}) => {
+module.exports = async (request, ctx, params, refreshable) => {
+
+    const {http_response, local_cache, redis_cache} = request;
 
     try {
     

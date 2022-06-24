@@ -39,11 +39,11 @@ class HttpRequest {
 
             } else if (object instanceof Refreshable) {
 
-                await refreshable_request(ctx, params, object, this);
+                await refreshable_request(this, ctx, params, object);
 
             } else if (object instanceof Composite) {
 
-                await composite_request(ctx, params, object, this);
+                await composite_request(this, ctx, params, object);
 
             } else {
 

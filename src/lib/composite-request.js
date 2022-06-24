@@ -6,7 +6,9 @@ const Cacheable = require('../models/cacheable');
 const Refreshable = require('../models/refreshable');
 const get_config = require('../lib/get-config');
 
-module.exports = async (ctx, params, composite, {http_response, local_cache, redis_cache}) => {
+module.exports = async (request, ctx, params, composite) => {
+
+    const {http_response, local_cache, redis_cache} = request;
 
     const data = {};
 

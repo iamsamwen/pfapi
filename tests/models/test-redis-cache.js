@@ -9,7 +9,7 @@ const expect = chai.expect;
 
 // NODE_ENV=test mocha --timeout 30000 --reporter spec tests/models/test-redis-cache
 
-describe('Test Redis Cache class', () => {
+describe('Test redis-cache', () => {
 
     it('set_cacheable and get_cacheable', async () => {
 
@@ -28,7 +28,6 @@ describe('Test Redis Cache class', () => {
         const cacheable3 = new Cacheable({key: 'test'});
         const result3 = await redis_cache.get_cacheable(cacheable3);
         expect(result3).is.true;
-        //console.log(cacheable3.plain_object, cacheable2.plain_object);
         expect(cacheable3.plain_object).to.deep.equals(cacheable2.plain_object);
 
         await sleep(200);

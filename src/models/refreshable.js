@@ -9,7 +9,7 @@ class Refreshable {
     /**
      * There are 2 ways to instantiate Refreshable:
      * 
-     * 1) make a NewClassName extends from Refreshable, append
+     * 1) make a NewClassName extends from Refreshable, instantiate it as
      *      module.exports = new NewClassName(__filename) 
      *    at bottom of the 
      * 
@@ -40,10 +40,10 @@ class Refreshable {
      * 
      * 1) it is the params in Cacheable, saved in cache as key info, for refresh purpose
      * 2) cache key is generated from { params, module_path }
-     * 3) get_data(params) uses the result
+     * 3) get_data(params) uses the return of reduce
      * 
      * For improving cache efficiency and reducing calls to generate caches,
-     * it also provides mechanism to remove frequently changing but not used properties.
+     * it provides mechanism to remove frequently changing but not used properties.
      * 
      * For example: 
      * 

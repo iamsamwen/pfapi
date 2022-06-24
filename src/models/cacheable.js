@@ -168,6 +168,8 @@ class Cacheable {
         const args = [];
         for (const key of info_keys) {
             if (key === 'count' || !this.hasOwnProperty(key)) continue;
+            const value = key === 'ttl' ? this.data_ttl : this[key];
+            if (value === undefined) continue;
             args.push(key, get_body(this[key]));
         }
         return args;
@@ -181,7 +183,7 @@ class Cacheable {
     //
     get data_ttl() {
         if (!this.hasOwnProperty('ttl')) {
-            this.ttl = this.config.ttl;
+            this.ttl = this.config.ttl || 900;
         }
         return this.ttl;
     }
@@ -261,7 +263,6 @@ class Cacheable {
 
     /**
      * get_data, it consequently calls to get_data of refreshable.
-     * assuming this.refreshable and this.params are ready
      * 
      * @returns no returns, throw exception if fails
      */
@@ -276,6 +277,8 @@ class Cacheable {
         this.timestamp = Date.now();
         if (!this.created_time) this.created_time = this.timestamp;
         this.duration = this.timestamp - start_ms;
+        const ttl = this?.tll || this.config.ttl;
+        if (ttl < this.duration) this.ttl = this.duration;
         this.checksum = get_checksum(this.data);
         const changed = previous_checksum !== this.checksum;
         if (changed) this.modified_time = this.timestamp;

@@ -83,4 +83,18 @@ module.exports = {
         cors_allowed_methods: ['GET', 'HEAD', 'OPTIONS'],
         cors_max_age: 2592000,
     },
+
+    AppBase: {
+        config_update_interval: 3600000,
+
+        rate_limits: [
+            { window_secs: 10, max_count: 1000, block_secs: 3600 },
+        ],
+
+        white_ips_list: [ '127.0.0.1' ],
+
+        blocked_ips_list: [],
+
+        proxy: true
+    }
 };

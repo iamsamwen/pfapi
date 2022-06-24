@@ -1,16 +1,14 @@
 'use strict';
 
-const get_class_config = require('../lib/get-class-config');
+const get_config = require('../lib/get-config')
 const get_body = require('../lib/get-body');
 const { get_etag, parse_etag } = require('../lib/etag');
 
 class HttpResponse {
 
-    constructor(config = {}) {
-        this.config = get_class_config(this, config);
-    }
-
     handle_cacheable_request(ctx, cacheable) {
+
+        this.config = get_config(this.constructor.name);
 
         switch (ctx.request.method) {
             case 'HEAD':
@@ -29,6 +27,8 @@ class HttpResponse {
     }
 
     handle_simple_request(ctx, status = 200, data) {
+
+        this.config = get_config(this.constructor.name);
 
         const { headers } = this.prepare_headers(ctx);
         
@@ -64,13 +64,13 @@ class HttpResponse {
         if (head_only) ctx.status = 204;
         else ctx.status = 200;
 
-        const {data, key, content_type, checksum, timestamp, modified_time, ttl} = cacheable.plain_object;
+        const {data, key, content_type, checksum, timestamp, modified_time, ttl = 900} = cacheable.plain_object;
 
         const rounded_modified_time = get_rounded_ms(modified_time);
 
         head_only = this.handle_conditional(ctx, rounded_modified_time, key, checksum, head_only);
 
-        headers['Last-Modified'] = new Date().toGMTString(rounded_modified_time);
+        ctx.lastModified = new Date().toGMTString(rounded_modified_time);
 
         const max_age = Math.round((ttl - (now_ms - timestamp)) / 1000);
         if (max_age > 0) {
@@ -78,9 +78,7 @@ class HttpResponse {
             headers['Expires'] = new Date(now_ms + max_age * 1000).toGMTString();
         }
 
-        if (key && checksum) {
-            headers['ETag'] = get_etag({ key, checksum });
-        }
+        if (key && checksum) ctx.etag = get_etag({ key, checksum });
 
         if (data && !head_only) {
             ctx.body = get_body(data);
@@ -164,7 +162,7 @@ class HttpResponse {
         const origin = ctx.get('Origin');
         if (origin) {
             headers['Access-Control-Allow-Origin'] = origin;
-            headers['Access-Control-Allow-Credentials'] = this.config?.cors_allow_credentials || true; 
+            headers['Access-Control-Allow-Credentials'] = this.config.cors_allow_credentials || true; 
         }
 
         headers['Vary'] = 'Origin';

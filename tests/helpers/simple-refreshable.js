@@ -10,8 +10,7 @@ class SimpleRefreshable extends Refreshable {
     async get_data({delay_ms = 10}) {
         await sleep(delay_ms);
         const data = {delayed_ms: delay_ms};
-        const content_type = 'application/json';
-        return {data, content_type};
+        return {data, content_type: 'application/json'};
     }
 }
 

@@ -6,7 +6,7 @@ const sleep = require('./sleep');
 
 project_root.set(process.cwd());
 
-let  version = 1;
+let version = 1;
 
 class RandomRefreshable extends Refreshable {
     async get_data({delay_ms = 10}) {

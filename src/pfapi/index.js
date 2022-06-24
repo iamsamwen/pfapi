@@ -3,7 +3,7 @@
 const fp = require('lodash/fp');
 const { v4: uuidv4 } = require('uuid');
 
-const { HttpRequest, Cacheable, RedisCache, LocalCache, 
+const { AppBase, Cacheable, RedisCache, LocalCache, 
     RefreshQueue, ExpiresWatch, get_class_config, 
     get_cache_key, default_configs, get_dependency_key } = require('../');
 
@@ -12,7 +12,7 @@ const HttpThrottle = require('./http-throttle');
 
 const config_ignore_keys = [ 'id', 'name', 'model', 'createdAt', 'updatedAt', 'publishedAt', 'createdBy', 'updatedBy' ];
 
-class PfapiApp extends HttpRequest {
+class PfapiApp extends AppBase {
 
     constructor(strapi, config_uid) {
 
@@ -27,11 +27,11 @@ class PfapiApp extends HttpRequest {
 
         this.strapi = strapi;
         if (config_uid) this.config_uid = config_uid;
-        this.config = this.get_default_config();
         this.uuid = uuidv4();
         this.run_maintenance_interval = 10000;
         this.instances = [];
         this.subscribe_db_uids = [];
+        this.config = this.get_default_config();
     }
 
     get_default_config() {
@@ -48,6 +48,60 @@ class PfapiApp extends HttpRequest {
 
             proxy: true
         }
+    }
+
+    get_config(name) {
+
+        if (!this._local_cache) {
+            throw new Error('local_cache is not setup');
+        }
+
+        const key = this.get_config_key(name);
+        return this._local_cache.get(key) || {};
+    }
+
+    get local_cache() {
+        return this._local_cache;
+    }
+
+    get redis_cache() {
+        return this._redis_cache;
+    }
+
+    async start() {
+        
+        Object.assign(this, get_class_config(this, await this.fetch_config(this.constructor.name)));
+    
+        this._local_cache = new LocalCache(await this.fetch_config('LocalCache'));
+
+        this._redis_cache = new RedisCache(process.env.REDIS_URI);
+
+        //AppBase.prototype.start(this);
+        global.PfapiApp = this;
+
+        this.config = this.get_default_config();
+
+        await this.update_all_configs();
+
+        if (this.config.proxy) {
+            this.strapi.app.proxy = true;
+        }
+    
+        this.pubsub = new EventPubSub(this, this._redis_cache, this.uuid);
+
+        await this.pubsub.start();
+
+        const now_ms = Date.now();
+        
+        await this.publish({action: 'keep-alive', now_ms});
+
+        this.throttle = new HttpThrottle(this, this._redis_cache, this._local_cache);
+
+        this.run_maintenance();
+
+        this.strapi.PfapiApp = this;
+
+        if (this.config_uid) this.subscribe_db_events(this.config_uid, false);
     }
 
     get_params(ctx) {
@@ -131,7 +185,7 @@ class PfapiApp extends HttpRequest {
                 break;
             case 'evict-local-cache': 
                 if (from !== this.uuid && message.keys) {
-                    for (const key of message.keys) this.local_cache.delete({key});
+                    for (const key of message.keys) this._local_cache.delete({key});
                 }
                 break;
             case 'upsert':
@@ -202,49 +256,16 @@ class PfapiApp extends HttpRequest {
         await this.pubsub.publish(message);
     }
 
-    async start() {
-        
-        Object.assign(this, get_class_config(this, await this.fetch_config(this.constructor.name)));
-    
-        this.local_cache = new LocalCache(await this.fetch_config('LocalCache'));
-
-        this.redis_cache = new RedisCache(process.env.REDIS_URI);
-
-        global.PfapiApp = this;
-
-        await this.update_all_configs();
-
-        if (this.config.proxy) {
-            this.strapi.app.proxy = true;
-        }
-    
-        this.pubsub = new EventPubSub(this, this.redis_cache, this.uuid);
-
-        await this.pubsub.start();
-
-        const now_ms = Date.now();
-        
-        await this.publish({action: 'keep-alive', now_ms});
-
-        this.throttle = new HttpThrottle(this, this.redis_cache, this.local_cache);
-
-        this.run_maintenance();
-
-        this.strapi.PfapiApp = this;
-
-        if (this.config_uid) this.subscribe_db_events(this.config_uid, false);
-    }
-
     async evict_dependent(uid, id) {
 
         const key = get_dependency_key({uid, id});
-        const keys = await this.redis_cache.get_dependencies(key);
+        const keys = await this._redis_cache.get_dependencies(key);
 
         if (keys.length === 0) return;
 
         for (const key of keys) {
             const cacheable = new Cacheable({key});
-            await cacheable.del(this.local_cache, this.redis_cache);
+            await cacheable.del(this._local_cache, this._redis_cache);
         }
         this.publish({action: 'evict-local-cache', keys})
     }
@@ -332,9 +353,9 @@ class PfapiApp extends HttpRequest {
 
         console.log('start expires watch and refresh queue', this.uuid);
 
-        this.refresh_queue = new RefreshQueue(this.redis_cache, this.local_cache);
+        this.refresh_queue = new RefreshQueue(this._redis_cache, this._local_cache);
         await this.refresh_queue.start();
-        this.expires_watch = new ExpiresWatch(this.redis_cache, this.refresh_queue);
+        this.expires_watch = new ExpiresWatch(this._redis_cache, this.refresh_queue);
         await this.expires_watch.start();
     }
 
@@ -365,7 +386,7 @@ class PfapiApp extends HttpRequest {
             await this.pubsub.stop();
         }
         if (this.local_invalidate) {
-            await this.local_cache.stop();
+            await this.local_invalidate.stop();
         }
         if (this.refresh_queue) {
             await this.refresh_queue.stop();
@@ -373,8 +394,8 @@ class PfapiApp extends HttpRequest {
         if (this.throttle) {
             await this.throttle.stop();
         }
-        this.local_cache.stop();
-        await this.redis_cache.close();
+        this._local_cache.stop();
+        await this._redis_cache.close();
 
     }
 
@@ -382,19 +403,9 @@ class PfapiApp extends HttpRequest {
         return get_cache_key({params: {uid: this.config_uid, name}})
     }
 
-    get_config(name) {
-
-        if (!this.local_cache) {
-            throw new Error('local_cache is not setup');
-        }
-
-        const key = this.get_config_key(name);
-        return this.local_cache.get(key) || {};
-    }
-
     del_config(name) {
 
-        if (!this.local_cache) {
+        if (!this._local_cache) {
             throw new Error('local_cache is not setup');
         }
 
@@ -405,12 +416,12 @@ class PfapiApp extends HttpRequest {
             this.config = this.get_default_config();
         }
 
-        return this.local_cache.delete(key);
+        return this._local_cache.delete(key);
     }
 
     update_config(item) {
 
-        if (!this.local_cache) {
+        if (!this._local_cache) {
             throw new Error('local_cache is not setup');
         }
 
@@ -423,7 +434,7 @@ class PfapiApp extends HttpRequest {
             this.config = data;
         }
 
-        return this.local_cache.save(cacheable);
+        return this._local_cache.save(cacheable);
     }
 
     async update_all_configs() {

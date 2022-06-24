@@ -3,12 +3,12 @@
 /**
  * used by cacheable
  * 
- * params contains query related data
+ * params: contains query related data
  * module_path: relative refreshable module path to project root
- * content_type: for content-type of HTTP response
- * timestamp: time in milliseconds after calling get data
+ * content_type: for content-type of HTTP response headers
+ * timestamp: time in milliseconds after finishing get data call
  * modified_time: last time in milliseconds when data was modified
- * created_time: first time in milliseconds data was created
+ * created_time: first time in milliseconds data (identified by key) was created
  * ttl: time in milliseconds to live
  * duration: time used in milliseconds for calling get data
  * count: sampled usage count, when data is get from local cache, it is not counted

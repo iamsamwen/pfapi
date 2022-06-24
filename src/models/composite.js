@@ -24,9 +24,7 @@ class Composite {
     // if the config has property attributes, key and values of the 
     // attributes object will assign to the data object
 
-    transform(data, params) {
-        console.log('composite transform not implemented yet');
-    }
+    transform(data, params) {}
 }
 
 module.exports = Composite;

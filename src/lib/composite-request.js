@@ -6,7 +6,7 @@ const Cacheable = require('../models/cacheable');
 const Refreshable = require('../models/refreshable');
 const get_config = require('../lib/get-config');
 
-module.exports = async (ctx, params, composite) => {
+module.exports = async (ctx, params, composite, {http_response, local_cache, redis_cache}) => {
 
     const data = {};
 
@@ -26,7 +26,7 @@ module.exports = async (ctx, params, composite) => {
     for (const [key, value] of Object.entries(composite)) {
         if (value instanceof Refreshable) {
             data[key] = null;
-            promises.push(run_refreshable(key, params, value, result));
+            promises.push(run_refreshable(key, params, value, result, local_cache, redis_cache));
         } else if (typeof value !== 'function') {
             if (data[key] === undefined) data[key] = value;
         }
@@ -38,8 +38,6 @@ module.exports = async (ctx, params, composite) => {
 
     composite.transform(data, params);
 
-    const { http_response } = global.PfapiApp;
-
     if (params.ss_rand) {
         http_response.handle_simple_request(ctx, 200, data);
     } else {
@@ -49,11 +47,9 @@ module.exports = async (ctx, params, composite) => {
     return true;
 }
 
-async function run_refreshable(key, params, refreshable, result) {
+async function run_refreshable(key, params, refreshable, result, local_cache, redis_cache) {
 
     try {
-    
-        const { local_cache, redis_cache } = global.PfapiApp;
 
         const cacheable = new Cacheable({params, refreshable});
     

@@ -76,7 +76,6 @@ class PfapiApp extends AppBase {
 
         this._redis_cache = new RedisCache(process.env.REDIS_URI);
 
-        //AppBase.prototype.start(this);
         global.PfapiApp = this;
 
         this.config = this.get_default_config();

@@ -39,11 +39,11 @@ class HttpRequest {
 
             } else if (object instanceof Refreshable) {
 
-                await refreshable_request(ctx, params, object);
+                await refreshable_request(ctx, params, object, this);
 
             } else if (object instanceof Composite) {
 
-                await composite_request(ctx, params, object);
+                await composite_request(ctx, params, object, this);
 
             } else {
 
@@ -56,6 +56,14 @@ class HttpRequest {
         const ms = (Number(end_time - start_time) / 1000000).toFixed(2);
 
         ctx.set('x-response-time', `${ms} ms`);
+    }
+
+    get local_cache() {
+        return null;
+    }
+
+    get redis_cache() {
+        return null;
     }
 
     get_params(ctx) {

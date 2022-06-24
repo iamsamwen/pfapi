@@ -2,9 +2,7 @@
 
 const Cacheable = require('../models/cacheable');
 
-module.exports = async (ctx, params, refreshable) => {
-
-    const { local_cache, redis_cache, http_response } = global.PfapiApp;
+module.exports = async (ctx, params, refreshable, {http_response, local_cache, redis_cache}) => {
 
     try {
     

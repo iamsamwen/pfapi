@@ -64,7 +64,7 @@ class HttpResponse {
         if (head_only) ctx.status = 204;
         else ctx.status = 200;
 
-        const {data, key, metadata, checksum, timestamp, modified_time, ttl} = cacheable.plain_object;
+        const {data, key, content_type, checksum, timestamp, modified_time, ttl} = cacheable.plain_object;
 
         const rounded_modified_time = get_rounded_ms(modified_time);
 
@@ -84,8 +84,8 @@ class HttpResponse {
 
         if (data && !head_only) {
             ctx.body = get_body(data);
-            if (metadata && metadata['content-type']) {
-                ctx.type = metadata['content-type'];
+            if (content_type) {
+                ctx.type = content_type;
             } else {
                 ctx.type = this.config.content_type;
             }

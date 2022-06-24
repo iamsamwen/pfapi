@@ -57,7 +57,7 @@ class LocalCache {
     has(cacheable) {
         const value = this.cache_data.get(cacheable.key);
         if (!value) return false;
-        if (Date.now() >= value.expires_at) return false;
+        if (!value.permanent && Date.now() >= value.expires_at) return false;
         return true;
     }
 
@@ -85,20 +85,15 @@ class LocalCache {
     }
 
     maintenance() {
-        this.timer_handle = setInterval(async () => {
-            const start_ms = Date.now();
-            this.remove_expired();
-        }, this.timer_interval);
-    }
-
-    remove_expired() {
-        for (const [key, value] of this.cache_data.entries()) {
-            const {expires_at, permanent} = value;
-            if (permanent) continue;
-            if (Date.now() >= expires_at) {
-                this.cache_data.delete(key);
+        this.timer_handle = setInterval(() => {
+            for (const [key, value] of this.cache_data.entries()) {
+                const {expires_at, permanent} = value;
+                if (permanent) continue;
+                if (Date.now() >= expires_at) {
+                    this.cache_data.delete(key);
+                }
             }
-        }
+        }, this.timer_interval);
     }
 }
 

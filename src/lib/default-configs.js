@@ -40,8 +40,6 @@ module.exports = {
         // run maintenance interval
         timer_interval: 30000,
 
-        // permanent refresh batch size
-        batch_size: 32
     },
 
     RefreshQueue: {

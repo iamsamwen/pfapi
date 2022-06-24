@@ -106,4 +106,52 @@ describe('Test cacheable-2', () => {
         await redis_cache.close();
     });
 
+    it('get with early refresh', async () => {
+
+        const local_cache = new LocalCache({default_ttl: 20});
+
+        const redis_cache = new RedisCache();
+        
+        await redis_cache.flushall();
+
+        const config = {early_refresh_duration: 10, early_refresh_start: 20};
+        const delay_ms = 20;
+
+        const cacheable = new Cacheable({params: {delay_ms}, refreshable}, config);
+
+        const key = cacheable.key;
+
+        const result1 = await cacheable.get(local_cache, redis_cache);
+
+        expect(result1).equals(true);
+
+        //console.log(cacheable);
+        expect(result1).equals(true);
+        expect(cacheable.from).equals('fetch');
+
+        await sleep(30);
+
+        const result2 = await cacheable.get(local_cache, redis_cache);
+
+        //console.log(cacheable);
+        expect(result2).equals(true);
+        expect(cacheable.from).equals('redis');
+
+        await sleep(150);
+
+        //console.log(cacheable);
+        expect(cacheable.from).equals('scheduled_fetch');
+
+        const cacheable2 = new Cacheable({key}, config);
+        const result3 = await cacheable2.get(local_cache, redis_cache);
+
+        //console.log(cacheable2);
+        expect(result3).equals(true);
+        expect(cacheable2.from).equals('redis');
+
+        await local_cache.stop();
+        await redis_cache.close();
+
+    });
+
 });

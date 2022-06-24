@@ -43,6 +43,12 @@ describe('Test get-body', () => {
         expect(body).equals('1');
     });
 
+    it('decimal', async () => {
+        const body = get_body(1.23);
+        //console.log(body);
+        expect(body).equals('1.23');
+    });
+
     it('object', async () => {
         const body = get_body({x: 1});
         //console.log(body);

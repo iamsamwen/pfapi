@@ -91,7 +91,7 @@ class RedisCache extends RedisBase {
         return true;
     }
 
-    async delete(cacheable, ignore_expire = false) {
+    async delete(cacheable, ignore_invalidation = false) {
         if (!cacheable.key) {
             throw new Error('delete, no key in cacheable object');
         }
@@ -100,13 +100,13 @@ class RedisCache extends RedisBase {
         const exp_key = get_redis_key('EXP', cacheable.key);
         const no_exp_key = 'NO-' + exp_key;
         const multi = client.multi();
-        if (ignore_expire) {
+        if (ignore_invalidation) {
             multi.psetex(no_exp_key, 3000, 1);
         }
         multi.del(data_key);
         multi.del(exp_key);
         const result = await multi.exec();
-        if (ignore_expire) {
+        if (ignore_invalidation) {
             if (result.length !== 3) return false;
             if (result[1][1] !== 1) return false;
         } else {

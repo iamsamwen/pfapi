@@ -195,7 +195,6 @@ class PfapiApp extends HttpRequest {
                 }
             }
         }
-
         if (instance) this.instances.push(instance);
     }
 

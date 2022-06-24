@@ -2,6 +2,7 @@
 
 const Cacheable = require('../models/cacheable');
 const get_class_config = require('../lib/get-class-config');
+const get_priority_score = require('../lib/get-priority-score');
 
 class RefreshQueue {
 
@@ -92,7 +93,10 @@ class RefreshQueue {
 
     async get_key_score_argv(score_keys, key) {
         const cacheable = new Cacheable({key});
-        const score = await cacheable.calculate_priority_score(this.redis_cache);
+        await this.get_info(cacheable);
+        const { created_time, duration, count } = cacheable;
+        const slow_duration = cacheable?.config?.slow_duration;
+        const score = get_priority_score(created_time, duration, count, slow_duration);
         score_keys.push(score, key);
     }
     

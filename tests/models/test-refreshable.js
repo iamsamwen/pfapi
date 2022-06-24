@@ -19,7 +19,7 @@ describe('Test refreshable', () => {
         //console.log(data)
         expect(data).to.deep.equal({
             data: { delayed_ms: 3 },
-            metadata: { 'content-type': 'application/json' }
+            content_type: 'application/json'
           });
 
     });
@@ -31,7 +31,7 @@ describe('Test refreshable', () => {
         //console.log(data)
         expect(data).to.deep.equal({
             data: { delayed_ms: 5 },
-            metadata: { 'content-type': 'application/json' }
+            content_type: 'application/json'
           });
  
     });

@@ -29,7 +29,7 @@ describe('Test cacheable-1', () => {
         expect(cacheable).to.not.have.property('timestamp');
         expect(cacheable).to.not.have.property('created_time');
         expect(cacheable).to.not.have.property('modified_time');
-        expect(cacheable).to.not.have.property('metadata');
+        expect(cacheable).to.not.have.property('content_type');
         expect(cacheable).to.not.have.property('ttl');
 
         const result = await cacheable.get();
@@ -47,7 +47,7 @@ describe('Test cacheable-1', () => {
         expect(plain_object).to.have.property('timestamp');
         expect(plain_object).to.have.property('created_time');
         expect(plain_object).to.have.property('modified_time');
-        expect(plain_object).to.have.property('metadata');
+        expect(plain_object).to.have.property('content_type');
         expect(plain_object).to.have.property('ttl');
     });
 

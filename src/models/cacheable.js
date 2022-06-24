@@ -7,7 +7,7 @@ const get_cache_key = require('../lib/get-cache-key');
 const get_class_config = require('../lib/get-class-config');
 const get_body = require('../lib/get-body');
 const get_value = require('../lib/get-value');
-const get_dependency_key = require('../lib/get-dependency-key');
+const get_dependent_keys = require('../lib/get-dependent-keys');
 const update_params = require('../lib/update-params');
 
 const Refreshable = require('./refreshable');
@@ -18,15 +18,15 @@ class Cacheable {
      * constructor
      * 
      * @param {*} object can have keys in info_keys, 'key', 'data', 'dependent_keys' and refreshable object
-     * @param {*} config per type of instance config, used with params for calling reduce and get_data 
+     * @param {*} config for testing and per instance config 
      */
-    constructor(object) {
+    constructor(object, config) {
         if (object.refreshable) {
             this.refreshable = object.refreshable;
             this.module_path = this.refreshable.module_path;
         }
         this.plain_object = object;
-        this.config = get_class_config(this);
+        this.config = get_class_config(this, config);
         if (process.env.NODE_ENV === 'test') this.from = '';
     }
 
@@ -62,54 +62,15 @@ class Cacheable {
     }
 
     /**
-     * it updates local and redis caches by call refreshable.
-     *  
-     * @param {*} local_cache an instance of LocalCache
-     * @param {*} redis_cache an instance of RedisCache
-     * @param {*} skip_redis go directly to call refreshable
-     * @returns true if succeeded, otherwise false
-     */
-    async update(local_cache, redis_cache, skip_redis = false) {
-        if (!local_cache && !redis_cache) {
-            return false;
-        }
-        if (!skip_redis && redis_cache) {
-            const previous_checksum = this.checksum;
-            if (await redis_cache.get_cacheable(this)) {
-                // redis may updated by other instances
-                if (previous_checksum !== this.checksum) {
-                    local_cache.save(this);
-                    if (process.env.NODE_ENV === 'test') this.from = 'redis';
-                    return true;
-                }
-            }
-        }
-        if (await this.fetch_data(redis_cache, local_cache) && 
-            this.data !== undefined) {
-            if (local_cache) local_cache.save(this);
-            if (process.env.NODE_ENV === 'test') this.from = 'fetch';  
-            if (local_cache) local_cache.save(this);
-            return true;
-        } else {
-            console.error('set, failed to fetch_data data', this.module_path);
-            return false;
-        }
-    }
-
-    /**
      * delete the cacheable from redis and local cache
      * 
      * @param {*} local_cache an instance of LocalCache
      * @param {*} redis_cache an instance of RedisCache
-     * @param {*} ignore_expire ignore EXP::key invalidation
+     * @param {*} ignore_invalidation ignore invalidation
      */
-    async del(local_cache, redis_cache, ignore_expire = false) {
-        if (redis_cache) await redis_cache.delete(this, ignore_expire);
+    async del(local_cache, redis_cache, ignore_invalidation = false) {
+        if (redis_cache) await redis_cache.delete(this, ignore_invalidation);
         if (local_cache) local_cache.delete(this);
-    }
-
-    get is_refreshable() {
-        return !!this.module_path;
     }
 
     /**
@@ -191,9 +152,6 @@ class Cacheable {
     // helper function, prepare for redis set data
     //
     get data_value() {
-        if (this.data === undefined) {
-            throw new Error('data is empty');
-        }
         return get_body(this.data);
     }
 
@@ -210,12 +168,13 @@ class Cacheable {
         const args = [];
         for (const key of info_keys) {
             if (key === 'count' || !this.hasOwnProperty(key)) continue;
-            args.push(key);
-            let value = this[key];
-            if (typeof value === 'object') value = JSON.stringify(value);
-            args.push(value);
+            args.push(key, get_body(this[key]));
         }
         return args;
+    }
+
+    get is_refreshable() {
+        return !!this.module_path;
     }
 
     // to delay the decision of using default to the time needs it
@@ -245,12 +204,43 @@ class Cacheable {
     }
 
     /**
+     * for costly slow get data from source,
+     * we can do scheduled fetch when it closes to expiration
+     * without delay on current call
+     * 
+     * @param {*} redis_cache 
+     */
+    early_refresh(redis_cache) {
+        if (!this.timestamp || !this.duration) return;
+        if (this.duration < this.early_refresh_duration) return;
+        if (Date.now() - this.timestamp < this.config.early_refresh_start) return;
+        this.scheduled_fetch(redis_cache);
+    }
+
+    /**
+     * 
+     * no blocking async scheduled fetch data
+     * 
+     * @param {*} redis_cache 
+     */
+    scheduled_fetch(redis_cache, after_ms = 100) {
+        if (!redis_cache) return;
+        const handle = setTimeout(async () => {
+            if (await this.fetch_data(redis_cache)) {
+                if (process.env.NODE_ENV === 'test') this.from = 'scheduled_fetch';
+            }
+            clearTimeout(handle);
+        }, after_ms);
+        handle.unref();
+    }
+
+    /**
      * fetch data from source and save result to redis
      * 
      * @param {*} redis_cache 
      * @returns 
      */
-     async fetch_data(redis_cache) {
+    async fetch_data(redis_cache) {
         if (!this.params || !this.module_path) {
             if (!redis_cache || !await redis_cache.get_info(this)) {
                 return false;
@@ -266,47 +256,6 @@ class Cacheable {
         if (redis_cache) {
             await redis_cache.set_cacheable(this);
         }
-        return true;
-    }
-
-    /**
-     * calculate priority score 
-     * 
-     * @param {*} redis_cache 
-     * @returns 
-     */
-    async calculate_priority_score(redis_cache) {
-        if (!this.hasOwnProperty('duration') || !this.hasOwnProperty('count')) {
-            await redis_cache.get_info(this);
-        }
-        const duration_factor = this.duration ? this.duration / this.config.slow_duration : 1;
-        const age_ms = (Date.now() - this.created_time) || 1000;
-        const usage_factor = (this.count ? this.count : 1) / age_ms * 1000;
-        return duration_factor * duration_factor * usage_factor;
-    }
-
-    /**
-     * for costly slow get data from source,
-     * we can do early fetching when it closes to expiration
-     * without delay on current call
-     * 
-     * @param {*} redis_cache 
-     * @returns true if succeeded, otherwise false
-     */
-    early_refresh(redis_cache) {
-        if (!this.timestamp || !this.hasOwnProperty('duration')) {
-            console.error('early_refresh, missing timestamp and/or duration');
-            return false;
-        }
-        if (this.duration < this.early_refresh_duration) return false;
-        if (Date.now() - this.timestamp > this.config.early_refresh_start) return false;
-        const handle = setTimeout(async () => {
-            if (await this.fetch_data(redis_cache)) {
-                if (process.env.NODE_ENV === 'test') this.from = 'early_refresh';
-            }
-            clearTimeout(handle);
-        }, 100);
-        handle.unref();
         return true;
     }
 
@@ -330,32 +279,8 @@ class Cacheable {
         this.checksum = get_checksum(this.data);
         const changed = previous_checksum !== this.checksum;
         if (changed) this.modified_time = this.timestamp;
-        if (result.metadata) {
-            this.metadata = {};
-            for (const key in result.metadata) {
-                this.metadata[key.toLowerCase()] = result.metadata[key];
-            }
-        }
-        if (result.dependencies && result.dependencies.length > 0) {
-            try {
-                this.dependent_keys = [];
-                const uids = [];
-                for (const {uid, id} of result.dependencies) {
-                    if (!uid) continue;
-                    if (!uids.includes(uid)) uids.push(uid)
-                    const key = get_dependency_key({uid, id});
-                    if (key) this.dependent_keys.push(key);
-                }
-                if (global.PfapiApp) {
-                    for (const uid of uids) {
-                        global.PfapiApp.subscribe_db_events(uid);
-                    }
-                }
-            } catch(err) {
-                console.error(err.message);
-            }
-        }
-        return changed;
+        if (result.content_type) this.content_type = result.content_type;
+        if (result.dependencies) this.dependent_keys = get_dependent_keys(result.dependencies);
     }
 }
 

@@ -65,7 +65,7 @@ class Refreshable {
      * get_data calls get_data of the module
      * 
      * @param {*} params params is the result of reduce call, used to find and get the data
-     * @returns an object with data, metadata and dependencies fields
+     * @returns an object with data, content_type and dependencies fields
      */
     async get_data(params) {
         if (this.module) {

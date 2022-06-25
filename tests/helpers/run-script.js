@@ -11,16 +11,21 @@ module.exports = {
     get_exit_code
 };
 
-let stdout_data = '';
-let exit_code;
-let pid;
-let solved = false;
+let stdout_data, exit_code, pid, solved;
 
 function run_script1(cmd, ...argv) {
+    stdout_data = '';
+    exit_code = undefined;
+    pid = undefined;
+    solved = false;
     return run_script_return(false, cmd, argv)
 }
 
 function run_script2(cmd, ...argv) {
+    stdout_data = '';
+    exit_code = undefined;
+    pid = undefined;
+    solved = false;
     return run_script_return(true, cmd, argv)
 }
 

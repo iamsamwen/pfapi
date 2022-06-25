@@ -3,9 +3,10 @@
 const get_class_config = require('../lib/get-class-config');
 
 /**
- * note for permanent, only used for two purposes: 
- * 1) throttle (not refreshable), due to window_secs can not limited by default_ttl
- * 2) configs, to enable get config data without delay
+ * 
+ * permanent = true is used for configs, to enable get config data without delay
+ *
+ * permanent = number is used for throttle and default_ttl is ignored.
  */
 
 class LocalCache {
@@ -32,8 +33,11 @@ class LocalCache {
         const ttl = cacheable.data_ttl - (now_ms - timestamp);
         if (ttl <= 0) return false;
         const plain_object = { ...cacheable.plain_object };
-        if (!this.permanent) {
+        if (!plain_object.permanent) {
             plain_object.expires_at = now_ms + ( ttl < this.default_ttl ? ttl : this.default_ttl );
+        } else if (typeof plain_object.permanent === 'number') {
+            plain_object.expires_at = now_ms + plain_object.permanent;
+            delete plain_object.permanent;
         }
         this.cache_data.set(cacheable.key, plain_object);
         return true;

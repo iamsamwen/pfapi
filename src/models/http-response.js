@@ -6,50 +6,90 @@ const { get_etag, parse_etag } = require('../lib/etag');
 
 class HttpResponse {
 
+    constructor(request) {
+        this.request = request;
+    }
+
+    handle_origin(ctx, headers) {
+
+        const origin = ctx.get('Origin');
+        if (!origin) return;
+
+        if (this.request && this.request.handle_origin) {
+
+            this.request.handle_origin(ctx, headers);
+
+        } else {
+
+            headers['Access-Control-Allow-Origin'] = origin;
+            headers['Access-Control-Allow-Credentials'] = this.config.cors_allow_credentials || true;
+        }
+    }
+    
+    handle_options(ctx, headers) {
+
+        if (this.request && this.request.handle_options) {
+
+            this.request.handle_options(ctx, headers);
+        
+        } else {
+
+            const {cors_exposed_headers, cors_allow_headers, cors_allowed_methods, 
+                cors_max_age, cors_secure_context} = this.config;
+
+            headers['Access-Control-Expose-Headers'] = cors_exposed_headers.join(', ');
+            headers['Access-Control-Allow-Methods'] = cors_allowed_methods.join(', ');
+            headers['Access-Control-Allow-Headers'] = cors_allow_headers.join(', ');
+            headers['Access-Control-Max-Age'] = cors_max_age;
+
+            if (cors_secure_context) {
+                headers['Cross-Origin-Opener-Policy'] = 'same-origin';
+                headers['Cross-Origin-Embedder-Policy'] = 'require-corp';
+            }
+        }
+    }
+
     handle_cacheable_request(ctx, cacheable) {
 
         this.config = get_config(this.constructor.name);
+        const method = ctx.request.method;
 
-        switch (ctx.request.method) {
-            case 'HEAD':
-                this.handle_head_get_request(ctx, cacheable, true);
-                break;
+        switch (method) {
             case 'OPTIONS':
                 this.handle_options_request(ctx);
+                break;
+            case 'HEAD':
+                this.handle_head_get_request(ctx, cacheable, true);
                 break;
             case 'GET': 
                 this.handle_head_get_request(ctx, cacheable);
                 break;
             default:
-                this.handle_simple_request(ctx, 405, {message: `Method Not Allowed: ${ctx.request.method}`});
+                this.handle_nocache_request(ctx, 405, {message: `Method Not Allowed: ${ctx.request.method}`});
         }
 
     }
 
-    handle_simple_request(ctx, status = 200, data) {
+    handle_nocache_request(ctx, status = 200, data, content_type) {
 
         this.config = get_config(this.constructor.name);
-
-        const { headers } = this.prepare_headers(ctx);
-        
         const method = ctx.request.method;
 
-        if (method === 'OPTIONS') {
-            if (status < 400) data = null;
-        } else if (method === 'HEAD') {
-            if (status < 400) data = null;
-        } else if (method !== 'GET' && status < 300) {
-            this.handle_simple_request(ctx, 405, {message: `Method Not Allowed: ${ctx.request.method}`});
+        if (method === 'OPTIONS' && status < 400) {
+            this.handle_options_request(ctx);
+            return;
+        }
+        
+        if (method !== 'HEAD' && method !== 'GET' && status < 400) {
+            this.handle_nocache_request(ctx, 405, {message: `Method Not Allowed: ${ctx.request.method}`});
             return;
         }
 
-        if (method === 'OPTIONS') {
-            this.handle_options_request(origin, headers);
-        }
+        const { headers } = this.prepare_headers(ctx);
         
         if (data && status !== 204 && status !== 304) {
             ctx.body = get_body(data);
-            ctx.type = this.config.content_type;
+            ctx.type = content_type ? content_type : this.config.content_type;
         }
 
         for (const [key, value] of Object.entries(headers)) ctx.set(key, value);
@@ -94,13 +134,13 @@ class HttpResponse {
         }
     }
 
-    handle_conditional(ctx, rounded_modified_time, key, checksum, head_only) {
+    handle_conditional(ctx, modified_time, key, checksum, head_only) {
 
         const header = ctx.request.header;
 
         if (header['if-modified-since']) {
             const if_modified_since = Date.parse(header['if-modified-since']);
-            if (rounded_modified_time <= if_modified_since) {
+            if (modified_time <= if_modified_since) {
                 ctx.status = 304;
                 return true;
             }
@@ -127,18 +167,7 @@ class HttpResponse {
 
         const { headers } = this.prepare_headers(ctx);
 
-        const {cors_exposed_headers, cors_allow_headers, cors_allowed_methods, 
-            cors_max_age, cors_secure_context} = this.config;
-
-        headers['Access-Control-Expose-Headers'] = cors_exposed_headers.join(', ');
-        headers['Access-Control-Allow-Methods'] = cors_allowed_methods.join(', ');
-        headers['Access-Control-Allow-Headers'] = cors_allow_headers.join(', ');
-        headers['Access-Control-Max-Age'] = cors_max_age;
-
-        if (cors_secure_context) {
-            headers['Cross-Origin-Opener-Policy'] = 'same-origin';
-            headers['Cross-Origin-Embedder-Policy'] = 'require-corp';
-        }
+        this.handle_options(ctx, headers);
 
         for (const [key, value] of Object.entries(headers)) ctx.set(key, value);
 
@@ -159,11 +188,7 @@ class HttpResponse {
 
         if (this.config.allow_methods) headers['Allow'] = this.config.allow_methods.join(', ');
 
-        const origin = ctx.get('Origin');
-        if (origin) {
-            headers['Access-Control-Allow-Origin'] = origin;
-            headers['Access-Control-Allow-Credentials'] = this.config.cors_allow_credentials || true; 
-        }
+        this.handle_origin(ctx, headers);
 
         headers['Vary'] = 'Origin';
 

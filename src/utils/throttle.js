@@ -133,7 +133,7 @@ class Throttle {
         if (count === 1) {
             await client.pexpire(redis_key, window_secs * 1000);
         } else if (count >= max_count) {
-            const cacheable = new Cacheable({key, data: 1, ttl: block_secs * 1000, permanent: true});
+            const cacheable = new Cacheable({key, data: 1, ttl: block_secs * 1000, permanent: block_secs * 1000});
             this.local_cache.save(cacheable);
         }
     }

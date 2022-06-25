@@ -12,8 +12,6 @@ module.exports.get_pagination = require('./get-pagination');
 module.exports.get_sort = require('./get-sort');
 module.exports.get_start_limit = require('./get-start-limit');
 module.exports.merge_filters = require('./merge-filters');
-module.exports.refreshable_request = require('./refreshable-request');
-module.exports.composite_request = require('./composite-request');
 
 Object.assign(module.exports, require('./redis-keys'));
 

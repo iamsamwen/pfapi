@@ -74,10 +74,11 @@ module.exports = {
         stale_secs: null,
 
         allow_methods: ['GET', 'HEAD', 'OPTIONS'],
+
         content_type: 'application/json; charset=utf-8',
 
         cors_exposed_headers: [ 'Authorization', 'Content-Type', 'Accept', 'Accept-Language'],
-        cors_allow_headers: [ 'Authorization', 'Content-Type', 'Accept', 'Accept-Language'],
+        cors_allow_headers: [ 'Content-Type', 'Accept', 'Accept-Language'],
         cors_allow_credentials: true,
         cors_secure_context: true,
         cors_allowed_methods: ['GET', 'HEAD', 'OPTIONS'],

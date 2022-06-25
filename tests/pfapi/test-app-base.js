@@ -28,6 +28,14 @@ describe('Test app-base', () => {
         expect(headers).has.ownProperty('expires')
         expect(headers).has.ownProperty('x-response-time')
         expect(data).has.ownProperty('delayed_ms')
+
+        const first_response_time = Number(headers['x-response-time'].split(' ')[0]);
+
+        const result = await axios.get('http://localhost:3000/random');
+
+        const second_response_time = Number(result.headers['x-response-time'].split(' ')[0]);
+
+        expect(first_response_time).to.be.greaterThan(second_response_time);
     });
 
     it('test composite', async () => {
@@ -44,6 +52,14 @@ describe('Test app-base', () => {
         expect(data).has.ownProperty('title');
         expect(data).has.ownProperty('random');
         expect(data).has.ownProperty('simple');
+
+        const first_response_time = Number(headers['x-response-time'].split(' ')[0]);
+
+        const result = await axios.get('http://localhost:3000/random');
+
+        const second_response_time = Number(result.headers['x-response-time'].split(' ')[0]);
+
+        expect(first_response_time).to.be.greaterThan(second_response_time);
     });
 
     after(() => {

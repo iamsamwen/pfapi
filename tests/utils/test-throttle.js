@@ -19,7 +19,6 @@ describe('test throttle', () => {
         const local_cache = new LocalCache();
 
         await redis_cache.flushall();
-        local_cache.clear();
         
         const throttle = new Throttle(redis_cache, local_cache);
 

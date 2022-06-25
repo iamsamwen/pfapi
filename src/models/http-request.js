@@ -89,7 +89,7 @@ class HttpRequest {
         
             if (params.ss_rand) {
                 if (await cacheable.get()) {
-                    this.http_response.handle_nocache_request(ctx, 200, cacheable.data);
+                    this.http_response.handle_nocache_request(ctx, 200, cacheable.data, cacheable.content_type);
                     return true;
                 } else {
                     this.http_response.handle_nocache_request(ctx, 404, {message: 'Not Found'});

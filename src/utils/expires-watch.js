@@ -14,7 +14,7 @@ class ExpiresWatch {
             throw new Error('missing required redis and/or refresh_queue');
         }
         this.redis = redis;
-        if (refresh_queue) this.refresh_queue = refresh_queue;
+        this.refresh_queue = refresh_queue;
     }
 
     async start() {
@@ -49,8 +49,7 @@ class ExpiresWatch {
     }
 
     async on_expires(keys) {
-        if (!this.refresh_queue) return;
-        await this.refresh_queue.push(keys);
+        await this.refresh_queue.push(...keys);
     }
 
     async stop() {

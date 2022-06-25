@@ -80,9 +80,10 @@ module.exports = {
         cors_exposed_headers: [ 'Authorization', 'Content-Type', 'Accept', 'Accept-Language'],
         cors_allow_headers: [ 'Content-Type', 'Accept', 'Accept-Language'],
         cors_allow_credentials: true,
-        cors_secure_context: true,
         cors_allowed_methods: ['GET', 'HEAD', 'OPTIONS'],
         cors_max_age: 2592000,
+
+        cors_additional: null
     },
 
     PfapiApp: {

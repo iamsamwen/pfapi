@@ -8,6 +8,7 @@ class HttpResponse {
 
     constructor(request) {
         this.request = request;
+        this.config = get_config(this.constructor.name);
     }
 
     handle_origin(ctx, headers) {
@@ -35,17 +36,14 @@ class HttpResponse {
         } else {
 
             const {cors_exposed_headers, cors_allow_headers, cors_allowed_methods, 
-                cors_max_age, cors_secure_context} = this.config;
+                cors_max_age, cors_additional} = this.config;
 
             headers['Access-Control-Expose-Headers'] = cors_exposed_headers.join(', ');
             headers['Access-Control-Allow-Methods'] = cors_allowed_methods.join(', ');
             headers['Access-Control-Allow-Headers'] = cors_allow_headers.join(', ');
             headers['Access-Control-Max-Age'] = cors_max_age;
-
-            if (cors_secure_context) {
-                headers['Cross-Origin-Opener-Policy'] = 'same-origin';
-                headers['Cross-Origin-Embedder-Policy'] = 'require-corp';
-            }
+            if (cors_additional) Object.assign(headers, cors_additional);
+    
         }
     }
 

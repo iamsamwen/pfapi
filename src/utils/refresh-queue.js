@@ -17,6 +17,7 @@ class RefreshQueue {
 
     async push(keys) {
         if (this.stopped || keys.length === 0) return;
+        if (!Array.isArray(keys)) keys = [ keys ];
         const promises = [];
         const score_keys = [];
         for (const key of keys) {
@@ -58,7 +59,6 @@ class RefreshQueue {
     }
     
     async on_refresh(key) {
-        console.log('on_refresh receive', key);
         try {
             const cacheable = new Cacheable({key});
             return await cacheable.fetch_data(this.redis_cache, this.local_cache);
@@ -93,11 +93,12 @@ class RefreshQueue {
 
     async get_key_score_argv(score_keys, key) {
         const cacheable = new Cacheable({key});
-        await this.get_info(cacheable);
-        const { created_time, duration, count } = cacheable;
-        const slow_duration = cacheable?.config?.slow_duration;
-        const score = get_priority_score(created_time, duration, count, slow_duration);
-        score_keys.push(score, key);
+        if (await this.redis_cache.get_info(cacheable)) {
+            const { created_time, duration, count } = cacheable;
+            const slow_duration = cacheable?.config?.slow_duration;
+            const score = get_priority_score(created_time, duration, count, slow_duration);
+            score_keys.push(score, key);
+        }
     }
     
     async push_refresh_queue(score_keys) {

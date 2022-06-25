@@ -8,7 +8,7 @@ const sleep = require('../helpers/sleep');
 
 const expect = chai.expect;
 
-// NODE_ENV=test mocha --timeout 30000 --reporter spec tests/pfapi/test-app-base
+// NODE_ENV=test mocha --timeout 30000 --reporter spec tests/models/test-app-base
 
 describe('Test app-base', () => {
    

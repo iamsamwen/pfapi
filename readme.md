@@ -1,6 +1,6 @@
 # strapi-pfapi
 
-a strapi plugin library uses local and redis caches to achieve pretty fast - single digit milliseconds on average api processing time.
+a strapi plugin library uses local and redis caches to achieve pretty fast - single digit milliseconds on average api response time.
 
 ## how to use
 

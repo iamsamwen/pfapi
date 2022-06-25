@@ -84,7 +84,7 @@ module.exports = {
         cors_max_age: 2592000,
     },
 
-    AppBase: {
+    PfapiApp: {
         config_update_interval: 3600000,
 
         rate_limits: [

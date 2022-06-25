@@ -1,31 +1,75 @@
 'use strict';
 
-const { exec } = require("child_process");
+const { spawn } = require("child_process");
 
 module.exports = {
-    run_script,
+    run_script: run_script1,
+    run_script1,
+    run_script2,
+    kill_script,
     get_stdout,
+    get_exit_code
 };
 
-let result = '';
+let stdout_data = '';
+let exit_code;
+let pid;
+let solved = false;
 
-function run_script(cmd) {
+function run_script1(cmd, ...argv) {
+    return run_script_return(false, cmd, argv)
+}
+
+function run_script2(cmd, ...argv) {
+    return run_script_return(true, cmd, argv)
+}
+
+function run_script_return(on_data, cmd, argv) {
     return new Promise(resolve => {
-        exec(cmd, (error, stdout, stderr) => {
-            if (error) {
-                console.log(`error: ${error.message}`);
-                resolve(false);
-            } else if (stderr) {
-                console.log(`stderr: ${stderr}`);
-                resolve(false);
-            } else {
-                result = stdout.toString();
-                resolve(result);
+        
+        const ps = spawn(cmd, argv);
+        pid = ps.pid;
+
+        ps.stdout.on('data', (data) => {
+            console.log('stdout', data.toString('utf-8'))
+            stdout_data += data.toString('utf-8');
+            if (!solved && on_data) {
+                solved = true;
+                resolve();
+            }
+        });
+          
+        ps.stderr.on('data', (data) => {
+            console.log('stderr', data.toString('utf-8'));
+            console.error(data.toString('utf-8'))
+            if (!solved && on_data) {
+                solved = true;
+                resolve();
+            }
+        });
+          
+        ps.on('close', (code) => {
+            exit_code = code;
+            if (!solved && !on_data) {
+                solved = true;
+                resolve();
             }
         });
     });
 }
 
+function kill_script() {
+    if (pid) {
+        process.kill(pid, 'SIGINT');
+    } else {
+        console.error('no pid to kill');
+    }
+}
+
 function get_stdout() {
-    return result;
+    return stdout_data;
+}
+
+function get_exit_code() {
+    return exit_code;
 }

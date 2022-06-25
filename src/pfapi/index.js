@@ -31,31 +31,12 @@ class PfapiApp extends AppBase {
         this.run_maintenance_interval = 10000;
         this.instances = [];
         this.subscribe_db_uids = [];
-        this.config = this.get_default_config();
-    }
-
-    get_default_config() {
-        return {
-            config_update_interval: 3600000,
-
-            rate_limits: [
-                { window_secs: 10, max_count: 1000, block_secs: 3600 },
-            ],
-
-            white_ips_list: [ '127.0.0.1' ],
-
-            blocked_ips_list: [],
-
-            proxy: true
-        }
+        this.config = default_configs[this.constructor.name];;
     }
 
     get_config(name) {
 
-        if (!this._local_cache) {
-            throw new Error('local_cache is not setup');
-        }
-
+        if (!this._local_cache) return null;
         const key = this.get_config_key(name);
         return this._local_cache.get(key) || {};
     }
@@ -75,10 +56,6 @@ class PfapiApp extends AppBase {
         this._local_cache = new LocalCache(await this.fetch_config('LocalCache'));
 
         this._redis_cache = new RedisCache(process.env.REDIS_URI);
-
-        global.PfapiApp = this;
-
-        this.config = this.get_default_config();
 
         await this.update_all_configs();
 
@@ -412,7 +389,7 @@ class PfapiApp extends AppBase {
 
         const key = this.get_config_key(name);
         if (name === this.constructor.name) {
-            this.config = this.get_default_config();
+            this.config = default_configs[name];
         }
 
         return this._local_cache.delete(key);

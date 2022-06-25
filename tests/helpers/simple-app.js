@@ -21,8 +21,4 @@ class SimplePfapiApp extends AppBase {
     }
 }
 
-const app = new SimplePfapiApp();
-
-app.start();
-
-module.exports = app;
+module.exports = new SimplePfapiApp();

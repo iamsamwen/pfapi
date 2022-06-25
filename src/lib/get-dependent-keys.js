@@ -13,7 +13,7 @@ module.exports = (dependencies) => {
             const key = get_dependency_key({uid, id});
             if (key) dependent_keys.push(key);
         }
-        if (global.PfapiApp) {
+        if (global.PfapiApp && global.PfapiApp.subscribe_db_events) {
             for (const uid of uids) {
                 global.PfapiApp.subscribe_db_events(uid);
             }

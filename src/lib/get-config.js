@@ -4,8 +4,8 @@ const default_configs = require('./default-configs');
 
 module.exports = (name) => {
     if (global.PfapiApp) {
-        return global.PfapiApp.get_config(name);
-    } else {
-        return default_configs[name];
+        const result = global.PfapiApp.get_config(name);
+        if (result) return result;
     }
+    return default_configs[name];
 }

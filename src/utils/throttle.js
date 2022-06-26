@@ -112,7 +112,7 @@ class Throttle {
         }, 100);
         handle.unref();
         for (const key in signatures) {
-            if (this.local_cache.has({key})) return true;
+            if (this.local_cache.has(key)) return true;
         }
         return false;
     }

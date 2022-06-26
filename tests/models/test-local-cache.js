@@ -37,7 +37,7 @@ describe('Test local-cache', () => {
         expect(result2).equals(true);
         expect(cacheable2.data).to.deep.equal(cacheable.data);
         expect(local_cache.get(key)).to.deep.equal(cacheable.data);
-        expect(local_cache.has({key})).equals(true);
+        expect(local_cache.has(key)).equals(true);
 
         await sleep(15);
 
@@ -62,7 +62,7 @@ describe('Test local-cache', () => {
 
         local_cache.save(cacheable);
 
-        local_cache.delete({key});
+        local_cache.delete(key);
 
         const result = local_cache.load(new Cacheable({key}));
         expect(result).equals(false);

@@ -61,21 +61,17 @@ class LocalCache {
         return value.data;
     }
 
-    has(cacheable) {
-        const value = this.cache_data.get(cacheable.key);
+    has(key) {
+        const value = this.cache_data.get(key);
         if (!value) return false;
         if (!value.permanent && Date.now() >= value.expires_at) return false;
         return true;
     }
 
-    /**
-     * @param {*} cacheable 
-     * @returns 
-     */
-    delete(cacheable) {
-        const value = this.cache_data.get(cacheable.key);
+    delete(key) {
+        const value = this.cache_data.get(key);
         if (!value) return false;
-        return this.cache_data.delete(cacheable.key);
+        return this.cache_data.delete(key);
     }
 
     clear() {

@@ -25,9 +25,9 @@ class LocalCache {
         const { timestamp = now_ms } = cacheable;
         const ttl = cacheable.data_ttl - (now_ms - timestamp);
         if (ttl <= 0) return false;
-        const plain_object = cacheable.plain_object;
-        plain_object.expires_at = now_ms + ( ttl < this.default_ttl ? ttl : this.default_ttl );
-        this.cache_data.set(cacheable.key, plain_object);
+        const object = cacheable.plain_object;
+        object.expires_at = now_ms + ( ttl < this.default_ttl ? ttl : this.default_ttl );
+        this.cache_data.set(cacheable.key, object);
         return true;
     }
 
@@ -39,7 +39,7 @@ class LocalCache {
         return true;
     }
 
-    put(key, data, ttl = true) {
+    put(key, data, ttl) {
         const now_ms = Date.now();
         const object = { data };
         if (ttl === true) {

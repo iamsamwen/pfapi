@@ -122,7 +122,7 @@ class HttpRequest {
         const data = {};
     
         if (params.handle) {
-            const config = get_config(params.handle);
+            const config = get_config(params.handle, true);
             if (config && config.attributes) {
                 Object.assign(data, config.attributes);
             }

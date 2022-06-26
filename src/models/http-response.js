@@ -8,7 +8,7 @@ class HttpResponse {
 
     constructor(request) {
         this.request = request;
-        this.config = get_config(this.constructor.name, true);
+        this.config = get_config(this.constructor.name, false);
     }
 
     handle_origin(ctx, headers) {
@@ -49,7 +49,7 @@ class HttpResponse {
 
     handle_cacheable_request(ctx, cacheable) {
 
-        this.config = get_config(this.constructor.name, true);
+        this.config = get_config(this.constructor.name, false);
         const method = ctx.request.method;
 
         switch (method) {
@@ -70,7 +70,7 @@ class HttpResponse {
 
     handle_nocache_request(ctx, status = 200, data, content_type) {
 
-        this.config = get_config(this.constructor.name, true);
+        this.config = get_config(this.constructor.name, false);
         const method = ctx.request.method;
 
         if (method === 'OPTIONS' && status < 400) {

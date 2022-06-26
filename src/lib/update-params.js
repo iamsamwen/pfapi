@@ -7,7 +7,7 @@ module.exports = (params) => {
     
     if (!params.handle) return;
 
-    const config = get_config(params.handle, false);
+    const config = get_config(params.handle, true);
 
     if (!config || Object.keys(config).length === 0) return;
 

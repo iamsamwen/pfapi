@@ -10,12 +10,15 @@ class AppBase extends HttpRequest {
         global.PfapiApp = this;
     }
 
-    get_config(name, is_class) {
+    get_config(name, is_handle) {
         if (!this._local_cache) return null;
-        const key = get_cache_key({params: {key: name, is_class}})
+        const key = get_cache_key({params: {key: name, is_handle}})
         return this._local_cache.get(key);
     }
 
+    subscribe_lifecycle_events(uid) {
+        console.log(`subscribe_lifecycle_events(${uid}) not implemented`);
+    }
 }
 
 module.exports = AppBase;

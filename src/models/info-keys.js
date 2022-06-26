@@ -12,7 +12,6 @@
  * ttl: time in milliseconds to live
  * duration: time used in milliseconds for calling get data
  * count: sampled usage count, when data is get from local cache, it is not counted
- * permanent: indicates it never expires locally
  */
 module.exports = [ 'params', 'module_path', 'content_type', 'checksum', 'timestamp', 
-    'modified_time', 'created_time', 'ttl', 'duration', 'count', 'permanent' ];
+    'modified_time', 'created_time', 'ttl', 'duration', 'count' ];

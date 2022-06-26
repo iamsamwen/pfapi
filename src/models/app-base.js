@@ -1,6 +1,7 @@
 'use strict';
 
 const HttpRequest = require('./http-request');
+const get_cache_key = require('../lib/get-cache-key');
 
 class AppBase extends HttpRequest {
     
@@ -9,17 +10,12 @@ class AppBase extends HttpRequest {
         global.PfapiApp = this;
     }
 
-    get_config(name) {
-        return null;
+    get_config(name, is_class) {
+        if (!this._local_cache) return null;
+        const key = get_cache_key({params: {key: name, is_class}})
+        return this._local_cache.get(key);
     }
 
-    get local_cache() {
-        throw new Error('get local_cache not implemented yet!');
-    }
-
-    get redis_cache() {
-        throw new Error('get redis_cache not implemented yet!');
-    }
 }
 
 module.exports = AppBase;

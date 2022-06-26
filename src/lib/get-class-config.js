@@ -6,8 +6,8 @@ const get_class_names = require('./get-class-names');
 module.exports = (instance, config = {}) => {
     const class_names = get_class_names(instance);
     const result = {};
-    for (const name of class_names) {
-        const default_config = get_config(name);
+    for (const key of class_names) {
+        const default_config = get_config(key, true);
         if (!default_config) continue;
         Object.assign(result, default_config);
     }

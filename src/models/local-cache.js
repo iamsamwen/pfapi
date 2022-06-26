@@ -6,7 +6,6 @@ const get_class_config = require('../lib/get-class-config');
  * 
  * permanent = true is used for configs, to enable get config data without delay
  *
- * permanent = number is used for throttle and default_ttl is ignored.
  */
 
 class LocalCache {
@@ -22,23 +21,12 @@ class LocalCache {
     }
 
     save(cacheable) {
-        if (this.cache_data.size > this.max_size * 1.33) {
-            this.remove_expired(false);
-            if (this.cache_data.size >= this.max_size) {
-                return false;
-            }
-        }
         const now_ms = Date.now();
         const { timestamp = now_ms } = cacheable;
         const ttl = cacheable.data_ttl - (now_ms - timestamp);
         if (ttl <= 0) return false;
-        const plain_object = { ...cacheable.plain_object };
-        if (!plain_object.permanent) {
-            plain_object.expires_at = now_ms + ( ttl < this.default_ttl ? ttl : this.default_ttl );
-        } else if (typeof plain_object.permanent === 'number') {
-            plain_object.expires_at = now_ms + plain_object.permanent;
-            delete plain_object.permanent;
-        }
+        const plain_object = cacheable.plain_object;
+        plain_object.expires_at = now_ms + ( ttl < this.default_ttl ? ttl : this.default_ttl );
         this.cache_data.set(cacheable.key, plain_object);
         return true;
     }
@@ -48,6 +36,21 @@ class LocalCache {
         if (!value) return false;
         if (!value.permanent && Date.now() >= value.expires_at) return false;
         cacheable.plain_object = value;
+        return true;
+    }
+
+    put(key, data, ttl = true) {
+        const now_ms = Date.now();
+        const object = { data };
+        if (ttl === true) {
+            object.permanent = true;
+        } else if (typeof ttl === 'number') {
+            object.ttl = ttl;
+            object.expires_at = now_ms + ttl;
+        } else {
+            object.expires_at = now_ms + this.default_ttl;
+        }
+        this.cache_data.set(key, object);
         return true;
     }
 

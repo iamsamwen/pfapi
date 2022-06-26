@@ -4,6 +4,7 @@ const Refreshable = require('./refreshable');
 const Cacheable = require('./cacheable');
 const Composite = require('./composite');
 const HttpResponse = require('./http-response');
+const get_params = require('../lib/get-params');
 
 class HttpRequest {
 
@@ -20,7 +21,7 @@ class HttpRequest {
     }
 
     get_params(ctx) {
-        return ctx.query;
+        return get_params(ctx);
     }
 
     is_blocked(ctx) {
@@ -120,8 +121,8 @@ class HttpRequest {
     
         const data = {};
     
-        if (params.name) {
-            const config = get_config(params.name);
+        if (params.handle) {
+            const config = get_config(params.handle);
             if (config && config.attributes) {
                 Object.assign(data, config.attributes);
             }

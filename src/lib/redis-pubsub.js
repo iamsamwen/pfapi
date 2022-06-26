@@ -8,11 +8,11 @@ const get_class_config = require('../lib/get-class-config');
  */
 class RedisPubsub {
 
-    constructor(redis, config = {}, uuid = uuidv4()) {
-        if (!redis) {
+    constructor(redis_cache, config = {}, uuid = uuidv4()) {
+        if (!redis_cache) {
             throw new Error('missing required redis');
         }
-        this.redis = redis;
+        this.redis_cache = redis_cache;
         Object.assign(this, get_class_config(this, config));
         this.uuid = uuid;
     }
@@ -27,7 +27,7 @@ class RedisPubsub {
 
     async publish(message) {
         const event = {from: this.uuid, message};
-        const client = await this.redis.get_client();
+        const client = await this.redis_cache.get_client();
         return await client.publish(this.channel_name, JSON.stringify(event));
     }
 
@@ -38,14 +38,14 @@ class RedisPubsub {
     async stop() {
         if (!this.pubsub_client) return;
         await this.turnoff_pubsub(this.pubsub_client, this.channel_name);
-        await this.redis.close(this.pubsub_client);
+        await this.redis_cache.close(this.pubsub_client);
         this.pubsub = null;
     }
 
     // support functions
 
     async on_pubsub(channel_name, on_event) {
-        const subscribe_client = await this.redis.get_client(true);
+        const subscribe_client = await this.redis_cache.get_client(true);
         const subscribe_result = await subscribe_client.subscribe(channel_name);
         if (subscribe_result !== 1) {
             console.error('on_pubsub, failed to subscribe');

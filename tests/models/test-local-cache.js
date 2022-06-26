@@ -75,27 +75,19 @@ describe('Test local-cache', () => {
     it('permanent', async () => {
 
         const local_cache = new LocalCache({default_ttl: 10 });
-        
-        const params = {x: 1};
-        const data = {y: 2};
-        const timestamp = Date.now() - 1000;
-        const ttl = 3000;
-        const permanent = true;
-        const cacheable = new Cacheable({params, data, timestamp, ttl, permanent});
-        const key = cacheable.key;
 
-        const result = local_cache.save(cacheable);
+        const result = local_cache.put('key', 'data', true);
 
-        await sleep(15);
+        await sleep(20);
 
         expect(result).equals(true);
         expect(local_cache.size).equals(1);
 
-        const cacheable2 = new Cacheable({key});
+        const cacheable2 = new Cacheable({key: 'key'});
         const result2 = local_cache.load(cacheable2);
 
         expect(result2).equals(true);
-        expect(cacheable2.data).to.deep.equal(cacheable.data);
+        expect(cacheable2.data).equals('data');
 
         await local_cache.stop();
     });

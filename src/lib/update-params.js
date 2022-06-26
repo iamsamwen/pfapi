@@ -5,9 +5,9 @@ const merge_filters = require('./merge-filters');
 
 module.exports = (params) => {
     
-    if (!params.name) return;
+    if (!params.handle) return;
 
-    const config = get_config(params.name);
+    const config = get_config(params.handle);
 
     if (!config || Object.keys(config).length === 0) return;
 

@@ -24,6 +24,17 @@ class Throttle {
     }
 
     /**
+     *
+     * @param {*} rate_limits 
+     */
+    apply_rate_limits(rate_limits) {
+        this.reset();
+        for (const {window_secs, max_count, block_secs} of rate_limits) {
+            this.set_throttle(window_secs, max_count, block_secs);
+        }
+    }
+
+    /**
      * reset throttles
      */
     reset() {
@@ -133,8 +144,7 @@ class Throttle {
         if (count === 1) {
             await client.pexpire(redis_key, window_secs * 1000);
         } else if (count >= max_count) {
-            const cacheable = new Cacheable({key, data: 1, ttl: block_secs * 1000, permanent: block_secs * 1000});
-            this.local_cache.save(cacheable);
+            this.local_cache.put(key, 1, block_secs * 1000);
         }
     }
 }

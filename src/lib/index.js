@@ -11,7 +11,9 @@ module.exports.get_dependency_key = require('./get-dependency-key');
 module.exports.get_pagination = require('./get-pagination');
 module.exports.get_sort = require('./get-sort');
 module.exports.get_start_limit = require('./get-start-limit');
+module.exports.get_params = require('./get-params');
 module.exports.merge_filters = require('./merge-filters');
+module.exports.get_config_key = require('./get-config-key');
 
 Object.assign(module.exports, require('./redis-keys'));
 

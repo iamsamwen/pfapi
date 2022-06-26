@@ -1,7 +1,7 @@
 'use strict';
 
 const HttpRequest = require('./http-request');
-const get_cache_key = require('../lib/get-cache-key');
+const get_config_key = require('../lib/get-config-key');
 
 class AppBase extends HttpRequest {
     
@@ -11,9 +11,10 @@ class AppBase extends HttpRequest {
     }
 
     get_config(name, is_handle) {
-        if (!this._local_cache) return null;
-        const key = get_cache_key({params: {key: name, is_handle}})
-        return this._local_cache.get(key);
+        const local_cache = this.local_cache;
+        if (!local_cache) return null;
+        const key = get_config_key(name, is_handle)
+        return local_cache.get(key);
     }
 
     subscribe_lifecycle_events(uid) {

@@ -4,6 +4,7 @@ const Refreshable = require('./refreshable');
 const Cacheable = require('./cacheable');
 const Composite = require('./composite');
 const HttpResponse = require('./http-response');
+const get_config = require('../lib/get-config');
 const get_params = require('../lib/get-params');
 
 class HttpRequest {
@@ -110,7 +111,7 @@ class HttpRequest {
                 this.http_response.handle_nocache_request(ctx, 404, {message: err.message});
             } else {
                 console.error(err);
-                this.http_response.handle_nocache_request(ctx, 500, {message: err.message});
+                this.http_response.handle_nocache_request(ctx, 500, {message: 'failed'});
             }
         }
         
@@ -189,7 +190,7 @@ class HttpRequest {
                 result.data[key] = {message: err.message};
             } else {
                 console.error(err);
-                result.data[key] = {message: err.message};
+                result.data[key] = {message: 'failed'};
             }
         }
     }

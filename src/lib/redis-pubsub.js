@@ -10,7 +10,7 @@ class RedisPubsub {
 
     constructor(redis_cache, config = {}, uuid = uuidv4()) {
         if (!redis_cache) {
-            throw new Error('missing required redis');
+            throw new Error('missing required redis_cache');
         }
         this.redis_cache = redis_cache;
         Object.assign(this, get_class_config(this, config));

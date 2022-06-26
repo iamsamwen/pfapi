@@ -8,13 +8,14 @@ module.exports = (params) => {
     if (!params.handle) return;
 
     const config = get_config(params.handle, true);
-
-    if (!config || Object.keys(config).length === 0) return;
-
+    
+    if (!config || !config.params) return;
+    //console.log(params.handle, config);
+    const config_params = config.params;
     const filters = params.filters;
-    const config_filters = config.filters;
+    const config_filters = config_params.filters;
 
-    Object.assign(params, config);
+    Object.assign(params, config_params);
     
     if (filters || config_filters) {
         params.filters = merge_filters(filters, config_filters);

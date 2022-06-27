@@ -5,19 +5,25 @@ const merge_filters = require('./merge-filters');
 
 module.exports = (params) => {
     
-    if (!params.handle) return;
+    if (params.handle) {
+        
+        const config = get_config(params.handle, true);
 
-    const config = get_config(params.handle, true);
-    
-    if (!config || !config.params) return;
-    //console.log(params.handle, config);
-    const config_params = config.params;
-    const filters = params.filters;
-    const config_filters = config_params.filters;
+        if (config && config.params) {
 
-    Object.assign(params, config_params);
-    
-    if (filters || config_filters) {
-        params.filters = merge_filters(filters, config_filters);
+            const config_params = config.params;
+            const filters = params.filters;
+            const config_filters = config_params.filters;
+
+            Object.assign(params, config_params);
+            
+            if (filters || config_filters) {
+                params.filters = merge_filters(filters, config_filters);
+            }
+        }
+    }
+
+    if (params.fields && !params.fields.includes('id')) {
+        params.fields.unshift('id');
     }
 }

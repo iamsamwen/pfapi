@@ -1,7 +1,8 @@
 'use strict';
 
-const info_keys = require('./info-keys'); 
+const fp = require('lodash/fp');
 
+const info_keys = require('./info-keys'); 
 const get_checksum = require('../lib/get-checksum');
 const get_cache_key = require('../lib/get-cache-key');
 const get_class_config = require('../lib/get-class-config');
@@ -112,8 +113,9 @@ class Cacheable {
         }
         if (!this.params) this.params = {};
         if (this.refreshable) {
-            update_params(this.params);
+            const handle = this.params.handle;
             this.params = this.refreshable.reduce(this.params);
+            if (handle && !this.params.handle) this.params.handle = handle;
             for (const [key, value] of Object.entries(this.params)) {
                 if (value === undefined) delete this.params[key];
             }
@@ -269,7 +271,9 @@ class Cacheable {
     async get_data() {
         const previous_checksum = this.checksum;
         const start_ms = Date.now();
-        const result = await this.refreshable.get_data(this.params);
+        const params = fp.cloneDeep(this.params);
+        update_params(params);
+        const result = await this.refreshable.get_data(params);
         if (!result || result.data === undefined || result.data === null) {
             throw new Error(`Not Found`);
         }

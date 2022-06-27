@@ -40,7 +40,6 @@ class Refreshable {
      * 
      * 1) it is the params in Cacheable, saved in cache as key info, for refresh purpose
      * 2) cache key is generated from { params, module_path }
-     * 3) get_data(params) uses the return of reduce
      * 
      * For improving cache efficiency and reducing calls to generate caches,
      * it provides mechanism to remove frequently changing but not used properties.
@@ -58,13 +57,17 @@ class Refreshable {
      * @param {*} params data from query string and path params
      */
     reduce(params) {
-        return {...params};
+        return params;
     }
 
     /**
      * get_data calls get_data of the module
      * 
-     * @param {*} params params is the result of reduce call, used to find and get the data
+     * @param {*} params 
+     *
+     * 1) without config (handle), params is the result of reduce method
+     * 2) with config (handle), it is a merged of reduced params and params in config
+     * 
      * @returns an object with data, content_type and dependencies fields
      */
     async get_data(params) {

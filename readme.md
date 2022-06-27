@@ -28,13 +28,12 @@ http://localhost:1337/admin/plugins/content-type-builder
 
 ### step 4 test pfapi
 
-http://localhost:1337/pfapi/test/find-one/1
+http://localhost:1337/pfapi/tests/1
 
-http://localhost:1337/pfapi/test/find-many
+http://localhost:1337/pfapi/tests
 
-http://localhost:1337/pfapi/test/get-count
+http://localhost:1337/pfapi/tests/count
 
-http://localhost:1337/pfapi/test/get-composite
 
 assuming the name of the content-type you created is test
 

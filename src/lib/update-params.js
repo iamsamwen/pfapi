@@ -5,6 +5,8 @@ const merge_filters = require('./merge-filters');
 
 module.exports = (params) => {
     
+    params.sort_default = !params.sort;
+    
     if (params.handle) {
         
         const config = get_config(params.handle, true);

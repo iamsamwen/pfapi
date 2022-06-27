@@ -45,17 +45,30 @@ class RedisPubsub {
     // support functions
 
     async on_pubsub(channel_name, on_event) {
-        const subscribe_client = await this.redis_cache.get_client(true);
-        const subscribe_result = await subscribe_client.subscribe(channel_name);
-        if (subscribe_result !== 1) {
-            console.error('on_pubsub, failed to subscribe');
-            await this.close(subscribe_client);
-            return [];
-        }
-        subscribe_client.on('message', async (channel, data) => {
-            //console.log({channel, data})
-            await on_event(data);
+
+        const subscribe_client = await this.redis_cache.get_client(async (new_client) => {
+            try {
+                const subscribe_result = await new_client.subscribe(channel_name);
+                if (subscribe_result !== 1) {
+                    console.error('on_pubsub, failed to subscribe');
+                    await this.close(subscribe_client);
+                    return;
+                }
+                const id = await this.redis_cache.get_client_id(new_client);
+                new_client.on('message', async (channel, data) => {
+                    const current_id = await this.redis_cache.get_client_id(new_client);
+                    //console.log('on_pubsub', {current_id, id});
+                    if (current_id !== id) {
+                        await new_client.unsubscribe(channel);
+                        return;
+                    }
+                    await on_event(data);
+                });
+            } catch(err) {
+                console.error(err);
+            }
         });
+
         return subscribe_client;
     }
     

@@ -13,14 +13,6 @@ class HttpRequest {
         this.http_response = new HttpResponse(this);
     }
 
-    get local_cache() {
-        return null;
-    }
-
-    get redis_cache() {
-        return null;
-    }
-
     get_params(ctx) {
         return get_params(ctx);
     }

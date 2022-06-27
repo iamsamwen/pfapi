@@ -3,12 +3,12 @@
 const chai = require('chai');
 const axios = require('axios');
 
-const { run_script2, kill_script } = require('../helpers/run-script');
-const sleep = require('../helpers/sleep');
+const { run_script2, kill_script } = require('./helpers/run-script');
+const sleep = require('./helpers/sleep');
 
 const expect = chai.expect;
 
-// NODE_ENV=test mocha --timeout 30000 --reporter spec tests/models/test-app-base
+// NODE_ENV=test mocha --timeout 30000 --reporter spec tests/test-app-base
 
 describe('Test app-base', () => {
    

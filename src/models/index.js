@@ -12,4 +12,3 @@ module.exports.HttpRequest = require('./http-request');
 module.exports.RedisCache = require('./redis-cache')
 module.exports.LocalCache = require('./local-cache');
 
-module.exports.AppBase = require('./app-base');

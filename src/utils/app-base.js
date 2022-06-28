@@ -145,7 +145,7 @@ class AppBase extends HttpRequest {
 
             const now_ms = Date.now();
 
-            //await this.servers.publish({action: 'keep-alive', timestamp: this.started_at, now_ms});
+            await this.servers.publish({action: 'keep-alive', timestamp: this.started_at, now_ms});
 
             const instances = this.servers.instances;
 

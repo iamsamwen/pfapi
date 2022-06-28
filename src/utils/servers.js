@@ -23,7 +23,7 @@ class Servers extends RedisPubsub {
     }
     
     async on_receive(message, from) {
-        if (process.env.DEBUG > '1') console.log('on_receive:', {message, from});
+        if (process.env.DEBUG > '2') console.log('on_receive:', {message, from});
         switch(message.action) {
             case 'keep-alive':
                 this.update_instances(message, from);
@@ -56,7 +56,7 @@ class Servers extends RedisPubsub {
 
     async on_db_upsert(message) {
         const {uid, data} = message;
-        //console.log('on_db_upsert', {uid, data});
+        if (process.env.DEBUG > '2') console.log('on_db_upsert', {uid, data});
         if (uid && data) {
             if ([this.config_uid, this.handle_uid].includes(uid)) {
                 this.app.update_config(data);
@@ -70,7 +70,7 @@ class Servers extends RedisPubsub {
 
     async on_db_delete(message) {
         const {uid, data} = message;
-        //console.log('on_db_delete', {uid, data});
+        if (process.env.DEBUG > '2') console.log('on_db_delete', {uid, data});
         if (uid && data) {
             if ([this.config_uid, this.handle_uid].includes(uid)) {
                 this.app.del_config(data.name, this.handle_uid === uid);

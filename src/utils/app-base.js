@@ -1,17 +1,21 @@
 'use strict';
 
-const LocalCache = require('./models/local-cache');
-const RedisCache = require('./models/redis-cache');
-const HttpRequest = require('./models/http-request');
-const HttpThrottle = require('./utils/http-throttle');
-const Servers = require('./utils/servers');
-const RefreshQueue = require('./utils/refresh-queue');
-const ExpiresWatch = require('./utils/expires-watch');
-const get_config_key = require('./lib/get-config-key');
-const get_params = require('./lib/get-params');
-const get_params_uid = require('./lib/get-params-uid');
-const update_params_id = require('./lib/update-params-id');
-const fetch_config = require('./lib/fetch-config');
+const LocalCache = require('../models/local-cache');
+const RedisCache = require('../models/redis-cache');
+const HttpRequest = require('../models/http-request');
+const RefreshQueue = require('../models/refresh-queue');
+const ExpiresWatch = require('../models/expires-watch');
+
+const get_config_key = require('../lib/get-config-key');
+const get_item_config_key = require('../lib/get-item-config-key');
+const get_params = require('../lib/get-params');
+const get_params_uid = require('../lib/get-params-uid');
+const update_params_id = require('../lib/update-params-id');
+const normalize_data = require('../lib/normalize-data');
+const fetch_config = require('../lib/fetch-config');
+
+const HttpThrottle = require('./http-throttle');
+const Servers = require('./servers');
 
 class AppBase extends HttpRequest {
     
@@ -29,8 +33,35 @@ class AppBase extends HttpRequest {
         return local_cache.get(key);
     }
 
-    get_params(ctx) {
+    del_config(key, is_handle) {
+        if (!this.local_cache || !key) return false;
+        const cache_key = get_config_key(key, is_handle);
+        this.local_cache.delete(cache_key);
+        if (key === this.constructor.name) {
+            this.config = default_config;
+            this.apply_config();
+        }
+    }
 
+    update_config(item) {
+        if (!this.local_cache || !item) return false;
+        const key = get_item_config_key(item);
+        if (!key) return false;
+        const data = normalize_data(item);
+        if (item.key === this.constructor.name) {
+            Object.assign(this.config, data);
+            this.apply_config();
+            return true;
+        }
+        return this.local_cache.put(key, data, true);
+    }
+
+    apply_config() {
+        this.strapi.app.proxy = !!this.config.proxy;
+        this.throttle.apply_rate_limits(this.config.rate_limits)
+    }
+
+    get_params(ctx) {
         const params = get_params(ctx);
         const { handle,  id} = params;
         const config = handle ? this.get_config(handle, true) : null;
@@ -38,28 +69,11 @@ class AppBase extends HttpRequest {
             params.uid = get_params_uid(this.strapi, this.local_cache, config, handle);
         }
         if (id) update_params_id(config, params, id);
-
         return params;
     }
 
     subscribe_lifecycle_events(uid, publish = true) {
         if (this.servers) this.servers.subscribe_lifecycle_events(uid, publish);
-    }
-
-    after_upsert(event) {
-        const uid = event.model.uid;
-        if (!event.result.hasOwnProperty('publishedAt') || event.result.publishedAt) {
-            if (this.servers) this.servers.publish({uid, action: 'upsert', data: event.result});
-        } else if (event.params.data.publishedAt === null) {
-            if (this.servers) this.servers.publish({uid, action: 'delete', data: event.result});
-        }
-    }
-
-    after_delete(event) {
-        const uid = event.model.uid;
-        if (!event.result.hasOwnProperty('publishedAt') || event.result.publishedAt) {
-            if (this.servers) this.servers.publish({uid, action: 'delete', data: event.result});
-        }
     }
 
     async start_refresh_queue() {
@@ -135,8 +149,9 @@ class AppBase extends HttpRequest {
 
             const { config_update_interval } = this.config;
             if (this.update_configs && config_update_interval && 
-                (!this.update_at || now_ms - this.update_at.getTime() > config_update_interval)) {
+                (!this.update_configs_at_ms || now_ms - this.update_configs_at_ms > config_update_interval)) {
                 await this.update_configs();
+                this.update_configs_at_ms = now_ms;
             }
 
         }, this.maintenance_interval);

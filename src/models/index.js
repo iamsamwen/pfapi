@@ -12,3 +12,6 @@ module.exports.HttpRequest = require('./http-request');
 module.exports.RedisCache = require('./redis-cache')
 module.exports.LocalCache = require('./local-cache');
 
+module.exports.Throttle = require('./throttle');
+module.exports.RefreshQueue = require('./refresh-queue');
+module.exports.ExpiresWatch = require('./expires-watch');

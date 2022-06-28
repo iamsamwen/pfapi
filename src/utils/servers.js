@@ -22,7 +22,7 @@ class Servers extends RedisPubsub {
     }
     
     async on_receive(message, from) {
-        //console.log('receive:', {message, from});
+        if (process.env.DEBUG) console.log('receive:', {message, from});
         switch(message.action) {
             case 'keep-alive':
                 this.update_instances(message, from);
@@ -31,9 +31,7 @@ class Servers extends RedisPubsub {
                 this.remove_instance(from);
                 break;
             case 'subscribe-db-event': 
-                if (from !== this.uuid) {
-                    this.subscribe_lifecycle_events(message.uid, false);
-                }
+                this.subscribe_lifecycle_events(message.uid, false);
                 break;
             case 'evict-local-cache': 
                 this.evict_local_cache(message, from)
@@ -50,17 +48,17 @@ class Servers extends RedisPubsub {
     }
 
     evict_local_cache({keys}, from) {
-        if (!this.app.local_cache) return;
-        if (from !== this.uuid && keys && keys.length > 0) {
-            for (const key of keys) this.app.local_cache.delete(key);
-        }
+        if (from === this.uuid || !this.app.local_cache) return;
+        if (!keys || keys.length === 0) return;
+        for (const key of keys) this.app.local_cache.delete(key);
     }
 
     async on_db_upsert(message) {
         const {uid, data} = message;
+        //console.log('on_db_upsert', {uid, data});
         if (uid && data) {
-            if (uid === this.config_uid) {
-                if (this.app.update_config) this.app.update_config(data);
+            if ([this.config_uid, this.handle_uid].includes(uid)) {
+                this.app.update_config(data);
             } else if (data.id) {
                 await this.evict_dependent(uid, data.id);
             }
@@ -71,9 +69,10 @@ class Servers extends RedisPubsub {
 
     async on_db_delete(message) {
         const {uid, data} = message;
+        //console.log('on_db_delete', {uid, data});
         if (uid && data) {
             if ([this.config_uid, this.handle_uid].includes(uid)) {
-                if (this.app.del_config) this.app.del_config(data.name, this.handle_uid === uid);
+                this.app.del_config(data.name, this.handle_uid === uid);
             } else {
                 await this.evict_dependent(uid, data.id);
             }
@@ -83,11 +82,8 @@ class Servers extends RedisPubsub {
     }
 
     update_instances(message, from) {
-
         if (!message.timestamp) return;
-        
         let instance = {uuid: from, timestamp: message.timestamp};
-
         if (this.instances.length > 0) {
             if (this.instances.find(x => x.uuid === from)) {
                 instance = null;
@@ -123,19 +119,29 @@ class Servers extends RedisPubsub {
         this.publish({action: 'evict-local-cache', keys})
     }
 
+    after_upsert(event) {
+        const uid = event.model.uid;
+        if (!event.result.hasOwnProperty('publishedAt') || event.result.publishedAt) {
+            this.publish({uid, action: 'upsert', data: event.result});
+        } else if (event.params.data.publishedAt === null) {
+            this.publish({uid, action: 'delete', data: event.result});
+        }
+    }
+
+    after_delete(event) {
+        const uid = event.model.uid;
+        if (!event.result.hasOwnProperty('publishedAt') || event.result.publishedAt) {
+            this.publish({uid, action: 'delete', data: event.result});
+        }
+    }
+
     subscribe_lifecycle_events(uid, publish = true) {
-
         if (!this.app.strapi) return;
-
         if (!uid || this.subscribed_uids.includes(uid)) return;
-
         this.subscribed_uids.push(uid);
-        
         if (publish) this.publish({uid, action: 'subscribe-db-event'});
-        
-        console.log('subscribe_lifecycle_events', uid);
-        
-        this.app.strapi.db.lifecycles.subscribe(lifecycles(this.app, uid))
+        if (process.env.DEBUG) console.log('subscribe_lifecycle_events', uid);
+        this.app.strapi.db.lifecycles.subscribe(lifecycles(this, uid))
     }
 }
 

@@ -1,7 +1,6 @@
 'use strict';
 
-const Throttle = require('./throttle');
-const is_ip_matched = require('../lib/is-ip-matched');
+const Throttle = require('../models/throttle');
 
 class HttpThrottle extends Throttle {
 
@@ -14,17 +13,13 @@ class HttpThrottle extends Throttle {
     }
 
     get_signature(ctx) {
-        if (this.app.config.white_ips_list) {
-            const white_ips_list = this.app.config.white_ips_list;
-            if (is_ip_matched(ctx, white_ips_list)) {
-                return null;
-            }
+        if (this.app.is_white_listed && this.app.is_white_listed(ctx)) {
+            return null;
         }
-        return {ip};
-    }
-
-    subscribe_lifecycle_events(uid, publish = true) {
-        if (this.servers) this.servers.subscribe_lifecycle_events(uid, publish);
+        if (this.app.throttle_pattern) {
+            return this.app.throttle_pattern(ctx);
+        }
+        return {ip: ctx.ip};
     }
 }
 

@@ -1,5 +1,7 @@
 'use strict';
 
+const fp = require('lodash/fp');
+
 const LocalCache = require('../models/local-cache');
 const RedisCache = require('../models/redis-cache');
 const HttpRequest = require('../models/http-request');
@@ -35,11 +37,13 @@ class AppBase extends HttpRequest {
 
     del_config(key, is_handle) {
         if (!this.local_cache || !key) return false;
-        const cache_key = get_config_key(key, is_handle);
-        this.local_cache.delete(cache_key);
+        const config_key = get_config_key(key, is_handle);
+        this.local_cache.delete(config_key);
         if (key === this.constructor.name) {
             this.config = default_config;
             this.apply_config();
+        } else if (is_handle) {
+            this.servers.evict_dependent(key, true);
         }
     }
 
@@ -48,17 +52,20 @@ class AppBase extends HttpRequest {
         const key = get_item_config_key(item);
         if (!key) return false;
         const data = normalize_data(item);
-        if (item.key === this.constructor.name) {
-            Object.assign(this.config, data);
-            this.apply_config();
-            return true;
-        }
-        return this.local_cache.put(key, data, true);
+        const old_data = this.local_cache.get(key);
+        if (fp.isEqual(data, old_data)) return true;
+        this.local_cache.put(key, data, true);
+        this.apply_config(item, data);
+        return true;
     }
 
-    apply_config() {
-        this.strapi.app.proxy = !!this.config.proxy;
-        this.throttle.apply_rate_limits(this.config.rate_limits)
+    apply_config({key, handle}, data) {
+        if (key === this.constructor.name) {
+            this.strapi.app.proxy = !!data.proxy;
+            this.throttle.apply_rate_limits(data.rate_limits);
+        } else if (handle) {
+            this.servers.evict_dependent(handle, true);
+        }
     }
 
     get_params(ctx) {
@@ -96,6 +103,16 @@ class AppBase extends HttpRequest {
         console.log('expires watch/refresh stopped', this.servers.uuid);
     }
 
+    list_caches(ctx) {
+        if (!this.local_cache) return null;
+        if (!process.env.DEBUG) {
+            this.http_response.handle_nocache_request(ctx, 404, {message: 'Not Found'});
+        } else {
+            const data = this.local_cache.list(ctx.query);
+            this.http_response.handle_nocache_request(ctx, 200, data);
+        }
+    }
+
     get maintenance_interval() {
         if (this.config && this.config.maintenance_interval) return this.config.maintenance_interval;
         return 100000;
@@ -128,7 +145,7 @@ class AppBase extends HttpRequest {
 
             const now_ms = Date.now();
 
-            await this.servers.publish({action: 'keep-alive', timestamp: this.started_at, now_ms});
+            //await this.servers.publish({action: 'keep-alive', timestamp: this.started_at, now_ms});
 
             const instances = this.servers.instances;
 

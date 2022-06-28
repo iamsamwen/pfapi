@@ -9,6 +9,7 @@ class Servers extends RedisPubsub {
 
     constructor(app) {
         super(app.redis_cache);
+        this.local_cache = app.local_cache;
         this.app = app;
         this.config_uid = app.config_uid;
         this.handle_uid = app.handle_uid;
@@ -22,7 +23,7 @@ class Servers extends RedisPubsub {
     }
     
     async on_receive(message, from) {
-        if (process.env.DEBUG) console.log('receive:', {message, from});
+        if (process.env.DEBUG > '1') console.log('on_receive:', {message, from});
         switch(message.action) {
             case 'keep-alive':
                 this.update_instances(message, from);
@@ -111,6 +112,7 @@ class Servers extends RedisPubsub {
     async evict_dependent(uid, id) {
         const key = get_dependency_key({uid, id});
         const keys = await this.redis_cache.get_dependencies(key);
+        if (process.env.DEBUG > '1') console.log('evict_dependent', key, {uid, id}, keys);
         if (keys.length === 0) return;
         for (const key of keys) {
             const cacheable = new Cacheable({key});
@@ -140,7 +142,7 @@ class Servers extends RedisPubsub {
         if (!uid || this.subscribed_uids.includes(uid)) return;
         this.subscribed_uids.push(uid);
         if (publish) this.publish({uid, action: 'subscribe-db-event'});
-        if (process.env.DEBUG) console.log('subscribe_lifecycle_events', uid);
+        if (process.env.DEBUG > '1') console.log('subscribe_lifecycle_events', uid);
         this.app.strapi.db.lifecycles.subscribe(lifecycles(this, uid))
     }
 }

@@ -71,7 +71,7 @@ class Cacheable {
      */
     async del(local_cache, redis_cache, ignore_invalidation = false) {
         if (redis_cache) await redis_cache.delete(this, ignore_invalidation);
-        if (local_cache) local_cache.delete(this);
+        if (local_cache) local_cache.delete(this.key);
     }
 
     /**
@@ -272,7 +272,7 @@ class Cacheable {
         const previous_checksum = this.checksum;
         const start_ms = Date.now();
         const params = fp.cloneDeep(this.params);
-        update_params(params);
+        const config_key = update_params(params);
         const result = await this.refreshable.get_data(params);
         if (!result || result.data === undefined || result.data === null) {
             throw new Error(`Not Found`);
@@ -288,6 +288,14 @@ class Cacheable {
         if (changed) this.modified_time = this.timestamp;
         if (result.content_type) this.content_type = result.content_type;
         if (result.dependencies) this.dependent_keys = get_dependent_keys(result.dependencies);
+        if (config_key) {
+            if (this.dependent_keys) this.dependent_keys.push(config_key);
+            else this.dependent_keys = [ config_key ];
+        }
+        if (process.env.DEBUG > '1') {
+            console.log('config key', config_key);
+            console.log('dependent_keys', this.dependent_keys);
+        }
     }
 }
 

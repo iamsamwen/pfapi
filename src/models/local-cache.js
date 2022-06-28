@@ -1,5 +1,6 @@
 'us strict';
 
+const fp = require('lodash/fp');
 const get_class_config = require('../lib/get-class-config');
 
 /**
@@ -72,6 +73,38 @@ class LocalCache {
         const value = this.cache_data.get(key);
         if (!value) return false;
         return this.cache_data.delete(key);
+    }
+
+    list(query) {
+        const result = [];
+        if (!query || Object.entries(query).length === 0) {
+            const it = this.cache_data.keys();
+            let next = it.next();
+            while (!next.done) {
+                const data = this.get(next.value)
+                if (data) result.push({[next.value]: data});
+                next = it.next();
+            }
+        } else if (query.cache_key) {
+            const data = this.get(query.cache_key);
+            if (data) result.push({[query.cache_key]: data});
+        } else {
+            const it = this.cache_data.keys();
+            let next = it.next();
+            while (!next.done) {
+                const data = this.get(next.value)
+                if (data) {
+                    let matched = true;
+                    for (const key in query) {
+                        matched = String(data[key]) === query[key];
+                        if (!matched) break;
+                    }
+                    if (matched) result.push({[next.value]: data})
+                }
+                next = it.next();
+            }
+        }
+        return result;
     }
 
     clear() {

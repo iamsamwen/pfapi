@@ -4,12 +4,12 @@
 const chai = require('chai');
 const LocalCache = require('../../src/models/local-cache');
 const RedisCache = require('../../src/models/redis-cache');
-const Throttle = require('../../src/utils/throttle');
+const Throttle = require('../../src/models/throttle');
 const sleep = require('../helpers/sleep');
 
 const expect = chai.expect;
 
-// NODE_ENV=test mocha --timeout 30000 --reporter spec tests/utils/test-throttle
+// NODE_ENV=test mocha --timeout 30000 --reporter spec tests/models/test-throttle
 
 describe('test throttle', () => {
 

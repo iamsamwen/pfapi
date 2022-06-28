@@ -3,12 +3,12 @@
 const chai = require('chai');
 const RedisCache = require('../../src/models/redis-cache');
 const { get_redis_key } = require('../../src/lib/redis-keys');
-const ExpiresWatch = require('../../src/utils/expires-watch');
+const ExpiresWatch = require('../../src/models/expires-watch');
 const sleep = require('../helpers/sleep');
 
 const expect = chai.expect;
 
-// NODE_ENV=test mocha --timeout 30000 --reporter spec tests/utils/test-expires-watch
+// NODE_ENV=test mocha --timeout 30000 --reporter spec tests/models/test-expires-watch
 
 class ExpiresWatchTest extends ExpiresWatch {
     constructor(redis_cache, for_test) {

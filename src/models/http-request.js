@@ -38,6 +38,8 @@ class HttpRequest {
 
         const start_time = process.hrtime.bigint();
 
+        let cache_key;
+
         if (this.is_blocked(ctx)) {
 
             this.http_response.handle_nocache_request(ctx, 403, {message: 'Forbidden'});
@@ -56,11 +58,11 @@ class HttpRequest {
 
             } else if (object instanceof Refreshable) {
 
-                await this.handle_refreshable_request(ctx, params, object);
+                cache_key = await this.handle_refreshable_request(ctx, params, object);
 
             } else if (object instanceof Composite) {
 
-                await this.handle_composite_request(ctx, params, object);
+                cache_key = await this.handle_composite_request(ctx, params, object);
 
             } else {
 
@@ -73,25 +75,29 @@ class HttpRequest {
         const ms = (Number(end_time - start_time) / 1000000).toFixed(2);
 
         ctx.set('X-Response-Time', `${ms} ms`);
+
+        if (process.env.DEBUG) {
+            console.log('cache_key:', cache_key, 'response_time:', ms, 'ms');
+        }
     }
 
     async handle_refreshable_request(ctx, params, refreshable) {
     
+        let cacheable;
+
         try {
         
-            const cacheable = new Cacheable({params, refreshable});
+            cacheable = new Cacheable({params, refreshable});
         
             if (params.ss_rand) {
                 if (await cacheable.get()) {
                     this.http_response.handle_nocache_request(ctx, 200, cacheable.data, cacheable.content_type);
-                    return true;
                 } else {
                     this.http_response.handle_nocache_request(ctx, 404, {message: 'Not Found'});
                 }
             } else {
                 if (await cacheable.get(this.local_cache, this.redis_cache)) {
                     this.http_response.handle_cacheable_request(ctx, cacheable);
-                    return true;
                 } else {
                     this.http_response.handle_nocache_request(ctx, 404, {message: 'Not Found'});
                 }
@@ -107,7 +113,7 @@ class HttpRequest {
             }
         }
         
-        return false;
+        return cacheable ? cacheable.key : null;
     }
 
     async handle_composite_request(ctx, params, composite)  {
@@ -142,13 +148,16 @@ class HttpRequest {
     
         composite.transform(data, params);
     
+        let cacheable;
+
         if (params.ss_rand) {
             this.http_response.handle_nocache_request(ctx, 200, data);
         } else {
-            this.http_response.handle_cacheable_request(ctx, new Cacheable(result));
+            cacheable = new Cacheable(result);
+            this.http_response.handle_cacheable_request(ctx, cacheable);
         }
     
-        return true;
+        return cacheable ? cacheable.key : null;
     }
 
     async run_refreshable(key, params, refreshable, result) {

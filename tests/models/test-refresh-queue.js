@@ -2,7 +2,7 @@
 
 const chai = require('chai');
 const Cacheable = require('../../src/models/cacheable');
-const RefreshQueue = require('../../src/utils/refresh-queue');
+const RefreshQueue = require('../../src/models/refresh-queue');
 const LocalCache = require('../../src/models/local-cache');
 const RedisCache = require('../../src/models/redis-cache');
 const refreshable = require('../helpers/simple-refreshable');

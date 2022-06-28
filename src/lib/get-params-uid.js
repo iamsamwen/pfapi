@@ -14,7 +14,7 @@ module.exports = (strapi, local_cache, config, handle) => {
                 const {info: {pluralName}} = value;
                 if (handle === pluralName) {
                     uid = key;
-                    app.local_cache.put(cache_key, uid);
+                    local_cache.put(cache_key, uid);
                     break;
                 }
             }

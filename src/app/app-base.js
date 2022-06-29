@@ -115,7 +115,7 @@ class AppBase extends HttpRequest {
                     const data = this.local_cache.list(ctx.query);
                     this.http_response.handle_nocache_request(ctx, 200, data);
                 } else {
-                    const data = this.local_cache.get(key);
+                    const data = this.local_cache.get_with_info(key);
                     if (data) this.http_response.handle_nocache_request(ctx, 200, data);
                     else this.http_response.handle_nocache_request(ctx, 404, {message: 'Not Found'});
                 }

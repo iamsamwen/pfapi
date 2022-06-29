@@ -75,6 +75,13 @@ class LocalCache {
         return this.cache_data.delete(key);
     }
 
+    get_with_info(key) {
+        const value = this.cache_data.get(key);
+        if (!value) return null;
+        if (!value.permanent && Date.now() >= value.expires_at) return null;
+        return value;
+    }
+
     /**
      * for debug
      * @param {*} query 

@@ -1,6 +1,6 @@
 'use strict';
 
-const Throttle = require('../models/throttle');
+const Throttle = require('../lib/throttle');
 
 class HttpThrottle extends Throttle {
 

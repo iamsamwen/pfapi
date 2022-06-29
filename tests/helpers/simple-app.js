@@ -1,8 +1,8 @@
 'use strict';
 
 const AppBase = require('../../src/app-base');
-const RedisCache = require('../../src/models/redis-cache');
-const LocalCache = require('../../src/models/local-cache');
+const RedisCache = require('../../src/lib/redis-cache');
+const LocalCache = require('../../src/lib/local-cache');
 
 class SimplePfapiApp extends AppBase {
 

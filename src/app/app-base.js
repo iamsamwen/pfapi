@@ -2,20 +2,20 @@
 
 const fp = require('lodash/fp');
 
-const LocalCache = require('../models/local-cache');
-const RedisCache = require('../models/redis-cache');
-const HttpRequest = require('../models/http-request');
-const RefreshQueue = require('../models/refresh-queue');
-const ExpiresWatch = require('../models/expires-watch');
+const LocalCache = require('../lib/local-cache');
+const RedisCache = require('../lib/redis-cache');
+const HttpRequest = require('../lib/http-request');
+const RefreshQueue = require('../lib/refresh-queue');
+const ExpiresWatch = require('../lib/expires-watch');
 
-const get_config_key = require('../lib/get-config-key');
-const get_item_config_key = require('../lib/get-item-config-key');
-const get_params = require('../lib/get-params');
-const get_params_uid = require('../lib/get-params-uid');
-const update_params_id = require('../lib/update-params-id');
-const normalize_data = require('../lib/normalize-data');
+const get_config_key = require('../utils/get-config-key');
+const get_item_config_key = require('../utils/get-item-config-key');
+const get_params = require('../utils/get-params');
+const get_params_uid = require('../utils/get-params-uid');
+const update_params_id = require('../utils/update-params-id');
+const normalize_data = require('../utils/normalize-data');
 const fetch_config = require('./fetch-config');
-const default_configs = require('../lib/default-configs');
+const default_configs = require('../utils/default-configs');
 
 const HttpThrottle = require('./http-throttle');
 const Servers = require('./servers');

@@ -1,8 +1,8 @@
 'use strict';
 
-const RedisPubsub = require('../models/redis-pubsub');
-const Cacheable = require('../models/cacheable');
-const get_dependency_key = require('../lib/get-dependency-key');
+const RedisPubsub = require('../lib/redis-pubsub');
+const Cacheable = require('../lib/cacheable');
+const get_dependency_key = require('../utils/get-dependency-key');
 const lifecycles = require('./lifecycles');
 
 class Servers extends RedisPubsub {

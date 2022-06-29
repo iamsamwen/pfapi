@@ -1,7 +1,7 @@
 'use strict';
 
 const project_root = require('../../src/app/project-root');
-const Refreshable = require('../../src/models/refreshable');
+const Refreshable = require('../../src/lib/refreshable');
 const sleep = require('./sleep');
 
 project_root.set(process.cwd());

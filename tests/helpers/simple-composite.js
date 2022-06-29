@@ -1,6 +1,6 @@
 'use strict';
 
-const Composite = require('../../src/models/composite');
+const Composite = require('../../src/lib/composite');
 
 const random = require('./random-refreshable');
 const simple = require('./simple-refreshable');

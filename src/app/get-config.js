@@ -1,6 +1,6 @@
 'use strict';
 
-const default_configs = require('./default-configs');
+const default_configs = require('../lib/default-configs');
 
 module.exports = (name, is_handle = true) => {
     if (global.PfapiApp) {

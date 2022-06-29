@@ -1,6 +1,6 @@
 'use strict';
 
-const normalize_data = require('./normalize-data');
+const normalize_data = require('../lib/normalize-data');
 
 module.exports = async (app, key) => {
     if (!app.strapi) return null;

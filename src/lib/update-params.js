@@ -1,6 +1,6 @@
 'use strict';
 
-const get_config = require('./get-config');
+const get_config = require('../app/get-config');
 const merge_filters = require('./merge-filters');
 const get_config_key = require('./get-config-key');
 

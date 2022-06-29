@@ -1,6 +1,6 @@
 'use strict';
 
-const project_root = require('../../src/lib/project-root');
+const project_root = require('../../src/app/project-root');
 const Refreshable = require('../../src/models/refreshable');
 const sleep = require('./sleep');
 

@@ -1,6 +1,6 @@
 'use strict';
 
-const get_config = require('./get-config');
+const get_config = require('../app/get-config');
 const get_class_names = require('./get-class-names');
 
 module.exports = (instance, config = {}) => {

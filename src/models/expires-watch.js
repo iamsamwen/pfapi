@@ -1,7 +1,7 @@
 'use strict';
 
 const { get_prefix_key } = require('../lib/redis-keys');
-const { on_invalidate, off_invalidate } = require('../lib/redis-invalidate');
+const { on_invalidate, off_invalidate } = require('./redis-invalidate');
 
 /**
  * watch EXP key delete and expire events from redis

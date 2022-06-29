@@ -2,7 +2,7 @@
 
 const fp = require('lodash/fp');
 
-const info_keys = require('./info-keys'); 
+const { info_keys, update_info } = require('./info-keys'); 
 const get_checksum = require('../lib/get-checksum');
 const get_cache_key = require('../lib/get-cache-key');
 const get_class_config = require('../lib/get-class-config');
@@ -141,11 +141,7 @@ class Cacheable {
     // helper function, update info from redis result
     //
     set info(result) {
-        for (const key in result) {
-            if (!info_keys.includes(key)) continue;
-            if (key === 'ttl' && this.ttl) continue;
-            this[key] = get_value(result[key]);
-        }
+        update_info(this, result);
         if (this.module_path && !this.refreshable) {
             this.refreshable = new Refreshable(this.module_path);
         }

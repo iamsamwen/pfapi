@@ -1,14 +1,14 @@
 'use strict';
 
 const chai = require('chai');
-const RedisBase = require('../../src/lib/redis-base');
-const { on_invalidate, off_invalidate } = require('../../src/lib/redis-invalidate');
+const RedisBase = require('../../src/models/redis-base');
+const { on_invalidate, off_invalidate } = require('../../src/models/redis-invalidate');
 const sleep = require('../helpers/sleep');
 const { run_script } = require('../helpers/run-script');
 
 const expect = chai.expect;
 
-// NODE_ENV=test mocha --timeout 10000 --reporter spec tests/lib/test-redis-invalidate
+// NODE_ENV=test mocha --timeout 10000 --reporter spec tests/models/test-redis-invalidate
 
 class InvalidateWatch {
 

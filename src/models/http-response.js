@@ -1,6 +1,6 @@
 'use strict';
 
-const get_config = require('../lib/get-config')
+const get_config = require('../app/get-config')
 const get_body = require('../lib/get-body');
 const { get_etag, parse_etag } = require('../lib/etag');
 

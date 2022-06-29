@@ -1,12 +1,12 @@
 'use strict';
 
 const chai = require('chai');
-const RedisBase = require('../../src/lib/redis-base');
+const RedisBase = require('../../src/models/redis-base');
 const { run_script } = require('../helpers/run-script');
 
 const expect = chai.expect;
 
-// NODE_ENV=test mocha --timeout 10000 --reporter spec tests/lib/test-redis-base
+// NODE_ENV=test mocha --timeout 10000 --reporter spec tests/models/test-redis-base
 
 describe('Test redis-base', () => {
 

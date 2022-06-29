@@ -1,7 +1,9 @@
 'use strict';
 
+const get_value = require('../lib/get-value');
+
 /**
- * used by cacheable
+ * used by cacheable and redis cache
  * 
  * params: contains query related data
  * module_path: relative refreshable module path to project root
@@ -13,5 +15,16 @@
  * duration: time used in milliseconds for calling get data
  * count: sampled usage count, when data is get from local cache, it is not counted
  */
-module.exports = [ 'params', 'module_path', 'content_type', 'checksum', 'timestamp', 
-    'modified_time', 'created_time', 'ttl', 'duration', 'count' ];
+
+ const info_keys = [ 'params', 'module_path', 'content_type', 'checksum', 'timestamp', 
+ 'modified_time', 'created_time', 'ttl', 'duration', 'count' ];
+
+module.exports.info_keys = info_keys;
+
+module.exports.update_info = (object, result) => {
+    for (const key in result) {
+        if (!info_keys.includes(key)) continue;
+        if (key === 'ttl' && object.ttl) continue;
+        object[key] = get_value(result[key]);
+    }
+}

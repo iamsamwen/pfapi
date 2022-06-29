@@ -18,16 +18,10 @@ module.exports.get_params_uid = require('./get-params-uid');
 module.exports.update_params_id = require('./update-params-id');
 module.exports.is_ip_matched = require('./is-ip-matched');
 module.exports.normalize_data = require('./normalize-data');
-module.exports.fetch_config = require('./fetch-config');
+
 module.exports.get_item_config_key = require('./get-item-config-key');
 
 Object.assign(module.exports, require('./redis-keys'));
-
-module.exports.RedisBase = require('./redis-base');
-module.exports.RedisPubsub = require('./redis-pubsub');
-
-Object.assign(module.exports, require('./redis-invalidate'));
-
 Object.assign(module.exports, require('./etag'));
-Object.assign(module.exports, require('./project-root'));
+
 

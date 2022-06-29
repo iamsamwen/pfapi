@@ -75,6 +75,11 @@ class LocalCache {
         return this.cache_data.delete(key);
     }
 
+    /**
+     * for debug
+     * @param {*} query 
+     * @returns 
+     */
     list(query) {
         const result = [];
         if (!query || Object.entries(query).length === 0) {
@@ -85,9 +90,6 @@ class LocalCache {
                 if (data) result.push({[next.value]: data});
                 next = it.next();
             }
-        } else if (query.cache_key) {
-            const data = this.get(query.cache_key);
-            if (data) result.push({[query.cache_key]: data});
         } else {
             const it = this.cache_data.keys();
             let next = it.next();

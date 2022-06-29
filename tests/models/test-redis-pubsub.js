@@ -1,14 +1,14 @@
 'use strict';
 
 const chai = require('chai');
-const RedisBase = require('../../src/lib/redis-base');
-const RedisPubsub = require('../../src/lib/redis-pubsub');
+const RedisBase = require('../../src/models/redis-base');
+const RedisPubsub = require('../../src/models/redis-pubsub');
 const sleep = require('../helpers/sleep');
 const { run_script } = require('../helpers/run-script');
 
 const expect = chai.expect;
 
-// NODE_ENV=test mocha --timeout 10000 --reporter spec tests/lib/test-redis-pubsub
+// NODE_ENV=test mocha --timeout 10000 --reporter spec tests/models/test-redis-pubsub
 
 class TestRedisPubsub extends RedisPubsub {
 

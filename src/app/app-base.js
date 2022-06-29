@@ -14,7 +14,8 @@ const get_params = require('../lib/get-params');
 const get_params_uid = require('../lib/get-params-uid');
 const update_params_id = require('../lib/update-params-id');
 const normalize_data = require('../lib/normalize-data');
-const fetch_config = require('../lib/fetch-config');
+const fetch_config = require('./fetch-config');
+const default_configs = require('../lib/default-configs');
 
 const HttpThrottle = require('./http-throttle');
 const Servers = require('./servers');
@@ -103,19 +104,38 @@ class AppBase extends HttpRequest {
         console.log('expires watch/refresh stopped', this.servers.uuid);
     }
 
-    list_caches(ctx) {
-        if (!this.local_cache) return null;
+    async handle_cache_request(ctx) {
         if (!process.env.DEBUG) {
-            this.http_response.handle_nocache_request(ctx, 404, {message: 'Not Found'});
+            this.http_response.handle_nocache_request(ctx, 403, {message: 'Forbidden! Only available for DEBUG'});
         } else {
-            const data = this.local_cache.list(ctx.query);
-            this.http_response.handle_nocache_request(ctx, 200, data);
+            const type = ctx.params.type;
+            const key = ctx.params.key;
+            if (type == 'local' && this.local_cache) {
+                if (key === 'list') {
+                    const data = this.local_cache.list(ctx.query);
+                    this.http_response.handle_nocache_request(ctx, 200, data);
+                } else {
+                    const data = this.local_cache.get(key);
+                    if (data) this.http_response.handle_nocache_request(ctx, 200, data);
+                    else this.http_response.handle_nocache_request(ctx, 404, {message: 'Not Found'});
+                }
+            } else if (type === 'redis' && this.redis_cache) {
+                if (key === 'list') {
+                    const data = await this.redis_cache.list(ctx.query);
+                    this.http_response.handle_nocache_request(ctx, 200, data);
+                } else {
+                    const data = await this.redis_cache.get(key);
+                    if (data) this.http_response.handle_nocache_request(ctx, 200, data);
+                    else this.http_response.handle_nocache_request(ctx, 404, {message: 'Not Found'});
+                }
+            } else {
+                this.http_response.handle_nocache_request(ctx, 404, {message: 'Not Found'});
+            }
         }
     }
 
     get maintenance_interval() {
-        if (this.config && this.config.maintenance_interval) return this.config.maintenance_interval;
-        return 100000;
+        return this.config.maintenance_interval || 100000;
     }
 
     async start() {
@@ -203,6 +223,16 @@ class AppBase extends HttpRequest {
         this.local_cache.stop();
         await this.redis_cache.close();
 
+    }
+
+    async initialize_data() {
+        const entries = [];
+        for (const [key, data] of Object.entries(default_configs)) {
+            entries.push({key, data});
+        }
+        if (entries.length > 0) {
+            await this.strapi.query(config_uid).createMany({data: entries});
+        }
     }
 }
 

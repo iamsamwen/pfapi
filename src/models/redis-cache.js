@@ -1,7 +1,9 @@
 'use strict';
 
-const { get_redis_key } = require('../lib/redis-keys');
-const RedisBase = require('../lib/redis-base');
+const { update_info } = require('./info-keys');
+const get_value = require('../lib/get-value');
+const { get_redis_key, get_prefix_key } = require('../lib/redis-keys');
+const RedisBase = require('./redis-base');
 
 class RedisCache extends RedisBase {
     
@@ -165,6 +167,74 @@ class RedisCache extends RedisBase {
             clearTimeout(handle);
         }, 100);
         handle.unref();
+    }
+
+    /**
+     * mainly used for debug
+     * 
+     * @param {*} key 
+     * @returns 
+     */
+    async get(key) {
+        const client = await this.get_client();
+        const data_key = get_redis_key('DATA', key);
+        const info_key = get_redis_key('INFO', key);
+        const dep_key = get_redis_key('DEP', key);
+        const multi = client.multi();
+        multi.get(data_key);
+        multi.hgetall(info_key);
+        multi.smembers(dep_key);
+        const result = await multi.exec();
+        if (result.length !== 3) return null;
+        const data = {};
+        if (result[0][1] && Object.keys(result[0][1]).length > 0) {
+            data.data = get_value(result[0][1]);
+            data.data_ttl = await client.ttl(data_key);
+        }
+        if (result[1][1] && Object.keys(result[1][1]).length > 0) {
+            data.info = {};
+            update_info(data.info,  result[1][1]);
+            data.info_ttl = await client.ttl(info_key);
+        }
+        if (result[2][1] && Object.keys(result[2][1]).length > 0) {
+            data.dep = result[2][1];
+            data.dep_ttl = await client.ttl(dep_key);
+        }
+        return data;
+    }
+
+    /**
+     * use for debug only
+     * 
+     * @param {*} query 
+     * @returns 
+     */
+    async list(query) {
+        const client = await this.get_client();
+        const data_keys = await client.keys('DATA::*');
+        const values = await client.mget(data_keys);
+        const data = [];
+        for (let i = 0; i < data_keys.length; i++) {
+            let value = values[i];
+            if (!value) continue;
+            const { key } = get_prefix_key(data_keys[i]);
+            data.push({[key]: get_value(value)});
+        }
+        if (!query || Object.entries(query).length === 0) {
+            return data;
+        } else {
+            const result = [];
+            for (const item of data) {
+                const [ key, value ] = Object.entries(item)[0];
+                let matched = true;
+                for (const key in query) {
+                    matched = String(vale[key]) === query[key];
+                    if (!matched) break;
+                }
+                if (matched) result.push({[key]: value})
+            }
+            return result;
+        }
     }
 }
 

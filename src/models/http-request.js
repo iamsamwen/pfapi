@@ -4,7 +4,7 @@ const Refreshable = require('./refreshable');
 const Cacheable = require('./cacheable');
 const Composite = require('./composite');
 const HttpResponse = require('./http-response');
-const get_config = require('../lib/get-config');
+const get_config = require('../app/get-config');
 const get_params = require('../lib/get-params');
 
 class HttpRequest {

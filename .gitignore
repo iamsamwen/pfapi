@@ -9,7 +9,7 @@ Icon
 .Spotlight-V100
 .Trashes
 ._*
-
+.npmrc
 
 ############################
 # Linux
@@ -79,7 +79,6 @@ $RECYCLE.BIN/
 .idea
 nbproject
 .vscode/
-.npmrc
 
 ############################
 # Node.js

@@ -13,8 +13,6 @@ module.exports.get_sort = require('./get-sort');
 module.exports.get_start_limit = require('./get-start-limit');
 module.exports.get_params = require('./get-params');
 module.exports.merge_filters = require('./merge-filters');
-module.exports.get_params_uid = require('./get-params-uid');
-module.exports.update_params_id = require('./update-params-id');
 module.exports.is_ip_matched = require('./is-ip-matched');
 module.exports.normalize_data = require('./normalize-data');
 

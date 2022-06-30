@@ -11,6 +11,7 @@ class Servers extends RedisPubsub {
         super(app.redis_cache);
         this.local_cache = app.local_cache;
         this.app = app;
+        this.strapi = app.strapi;
         this.config_uid = app.config_uid;
         this.handle_uid = app.handle_uid;
         this.instances = [];
@@ -23,7 +24,7 @@ class Servers extends RedisPubsub {
     }
     
     async on_receive(message, from) {
-        if (process.env.DEBUG > '2') console.log('on_receive:', {message, from});
+        if (process.env.DEBUG_PUBSUB) console.log('on_receive:', {message, from});
         switch(message.action) {
             case 'keep-alive':
                 this.update_instances(message, from);
@@ -51,12 +52,12 @@ class Servers extends RedisPubsub {
     evict_local_cache({keys}, from) {
         if (from === this.uuid || !this.app.local_cache) return;
         if (!keys || keys.length === 0) return;
-        for (const key of keys) this.app.local_cache.delete(key);
+        for (const key of keys) this.local_cache.delete(key);
     }
 
     async on_db_upsert(message) {
         const {uid, data} = message;
-        if (process.env.DEBUG > '2') console.log('on_db_upsert', {uid, data});
+        if (process.env.DEBUG_LIFECYCLES) console.log('on_db_upsert', {uid, data});
         if (uid && data) {
             if ([this.config_uid, this.handle_uid].includes(uid)) {
                 this.app.update_config(data);
@@ -71,7 +72,7 @@ class Servers extends RedisPubsub {
 
     async on_db_delete(message) {
         const {uid, data} = message;
-        if (process.env.DEBUG > '2') console.log('on_db_delete', {uid, data});
+        if (process.env.DEBUG_LIFECYCLES) console.log('on_db_delete', {uid, data});
         if (uid && data) {
             if ([this.config_uid, this.handle_uid].includes(uid)) {
                 this.app.del_config(data.name, this.handle_uid === uid);
@@ -113,7 +114,7 @@ class Servers extends RedisPubsub {
     async evict_dependent(uid, id) {
         const key = get_dependency_key({uid, id});
         const keys = await this.redis_cache.get_dependencies(key);
-        if (process.env.DEBUG > '1') console.log('evict_dependent', key, {uid, id}, keys);
+        if (process.env.DEBUG_DEPENDENTS) console.log('evict_dependent', key, {uid, id}, keys);
         if (keys.length === 0) return;
         for (const key of keys) {
             const cacheable = new Cacheable({key});
@@ -139,12 +140,26 @@ class Servers extends RedisPubsub {
     }
 
     subscribe_lifecycle_events(uid, publish = true) {
-        if (!this.app.strapi) return;
-        if (!uid || this.subscribed_uids.includes(uid)) return;
+        if (!uid) {
+            console.log('failed to subscribe_lifecycle_events, invalid uid', {uid, publish});
+            return;
+        }
+        if (this.subscribed_uids.includes(uid)) return;
+        if (this.is_primary()) {
+            const key = 'LifecycleEventsSubscription';
+            const { uids } = this.app.get_config(key, false);
+            if (!uids.includes(uid)) {
+                uids.push(uid);
+                const data = {data: {uids}};
+                 this.strapi.db.query(this.config_uid).update({where: {key}, data});
+            }
+        }
         this.subscribed_uids.push(uid);
         if (publish) this.publish({uid, action: 'subscribe-db-event'});
-        if (process.env.DEBUG > '1') console.log('subscribe_lifecycle_events', uid);
-        this.app.strapi.db.lifecycles.subscribe(lifecycles(this, uid))
+        if (process.env.DEBUG_LIFECYCLES) {
+            console.log('subscribe_lifecycle_events', uid);
+        }
+        this.strapi.db.lifecycles.subscribe(lifecycles(this, uid))
     }
 }
 

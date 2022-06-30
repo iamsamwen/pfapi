@@ -8,7 +8,7 @@ const get_cache_key = require('../utils/get-cache-key');
 const get_class_config = require('../utils/get-class-config');
 const get_body = require('../utils/get-body');
 const get_value = require('../utils/get-value');
-const get_dependent_keys = require('../utils/get-dependent-keys');
+const get_dependent_keys = require('../app/get-dependent-keys');
 const update_params = require('../utils/update-params');
 
 const Refreshable = require('./refreshable');
@@ -254,7 +254,10 @@ class Cacheable {
         }
         await this.get_data();
         if (redis_cache) {
-            await redis_cache.set_cacheable(this);
+            const result = await redis_cache.set_cacheable(this);
+            if (process.env.DEBUG_REDIS) {
+                console.log('set_cacheable:', this.key, result);
+            }
         }
         return true;
     }
@@ -288,9 +291,9 @@ class Cacheable {
             if (this.dependent_keys) this.dependent_keys.push(config_key);
             else this.dependent_keys = [ config_key ];
         }
-        if (process.env.DEBUG > '1') {
+        if (process.env.DEBUG_DEPENDENTS) {
             console.log('config key', config_key);
-            console.log('dependent_keys', this.dependent_keys);
+            console.log('dependent_keys', this.dependent_keys ? this.dependent_keys.length : null);
         }
     }
 }

@@ -10,10 +10,7 @@ const ExpiresWatch = require('../lib/expires-watch');
 
 const get_dependency_key = require('../utils/get-dependency-key');
 const get_params = require('../utils/get-params');
-const get_params_uid = require('../utils/get-params-uid');
-const update_params_id = require('../utils/update-params-id');
 const normalize_data = require('../utils/normalize-data');
-const fetch_config = require('./fetch-config');
 const default_configs = require('../utils/default-configs');
 
 const HttpThrottle = require('./http-throttle');
@@ -36,14 +33,12 @@ class AppBase extends HttpRequest {
     }
 
     get_config(key, is_handle) {
-        const local_cache = this.local_cache;
-        if (!local_cache) return null;
         const config_key = this.get_config_key(key, is_handle);
-        return local_cache.get(config_key);
+        return this.local_cache.get(config_key);
     }
 
     del_config(key, is_handle) {
-        if (!this.local_cache || !key) return false;
+        if (!key) return false;
         this.local_cache.delete(config_key);
         if (key === this.constructor.name) {
             this.config = default_config;
@@ -54,7 +49,7 @@ class AppBase extends HttpRequest {
     }
 
     update_config(item) {
-        if (!this.local_cache || !item || (!item.handle && !item.key)) return false;
+        if (!item || (!item.handle && !item.key)) return false;
         const config_key = this.get_config_key(item.handle || item.key, !!item.handle);
         const data = normalize_data(item);
         const old_data = this.local_cache.get(config_key);
@@ -71,23 +66,58 @@ class AppBase extends HttpRequest {
         }
     }
 
+    async fetch_config(key) {
+        const result = await this.strapi.db.query(this.config_uid).findOne({where: { key }}) || {};
+        return normalize_data(result);
+    }
+
     get_params(ctx) {
         const params = get_params(ctx);
         const { handle,  id} = params;
         const config = handle ? this.get_config(handle, true) : null;
-        if (this.strapi && this.local_cache) {
-            params.uid = get_params_uid(this.strapi, this.local_cache, config, handle);
-        }
-        if (id) update_params_id(config, params, id);
+        params.uid = this.get_params_uid(config, handle);
+        if (id) this.update_params_id(config, params, id);
         return params;
     }
 
+    get_params_uid(config, handle) {
+        if (config && config.uid) {
+            return config.uid;
+        } else if (handle) {
+            const cache_key = `api_uid::${handle}`;
+            let uid = this.local_cache.get(cache_key);
+            if (uid) {
+                return uid;     
+            } else {
+                for (const [key, value] of Object.entries(this.strapi.contentTypes)) {
+                    if (!key.startsWith('api::')) continue;
+                    const {info: {pluralName}} = value;
+                    if (handle === pluralName) {
+                        uid = key;
+                        this.local_cache.put(cache_key, uid);
+                        break;
+                    }
+                }
+                return uid;
+            }
+        }
+    }
+
+    update_params_id(config, params, id) {
+        const id_field = config && config.id_field ? config.id_field : 'id';
+        if (params.filters) {
+            if (params.filters.$and) params.filters.$and.push({[id_field]: id})
+            else params.filters[id_field] = id;
+        } else {
+            params.filters = {[id_field]: id};
+        }
+    }
+
     subscribe_lifecycle_events(uid, publish = true) {
-        if (this.servers) this.servers.subscribe_lifecycle_events(uid, publish);
+        this.servers.subscribe_lifecycle_events(uid, publish);
     }
 
     async start_refresh_queue() {
-        if (!this.redis_cache || !this.local_cache) return;
         if (this.refresh_queue) await this.refresh_queue.stop();
         this.refresh_queue = new RefreshQueue(this.redis_cache, this.local_cache);
         await this.refresh_queue.start();
@@ -98,7 +128,6 @@ class AppBase extends HttpRequest {
     }
 
     async stop_refresh_queue() {
-        if (!this.redis_cache || !this.local_cache) return;
         if (this.expires_watch) await this.expires_watch.stop();
         this.expires_watch = null;
         if (this.refresh_queue) await this.refresh_queue.stop();
@@ -125,6 +154,9 @@ class AppBase extends HttpRequest {
                 if (key === 'list') {
                     const data = await this.redis_cache.list(ctx.query);
                     this.http_response.handle_nocache_request(ctx, 200, data);
+                } else if (key === 'deps') {
+                    const data = await this.redis_cache.deps(ctx.query);
+                    this.http_response.handle_nocache_request(ctx, 200, data);
                 } else {
                     const data = await this.redis_cache.get(key);
                     if (data) this.http_response.handle_nocache_request(ctx, 200, data);
@@ -142,9 +174,10 @@ class AppBase extends HttpRequest {
 
     async start() {
 
-        Object.assign(this.config, await fetch_config(this, this.constructor.name));
+        Object.assign(this.config, await this.fetch_config(this.constructor.name));
     
-        this.local_cache = new LocalCache(await fetch_config(this, 'LocalCache'));
+        this.local_cache = new LocalCache(await this.fetch_config('LocalCache'));
+
         this.redis_cache = new RedisCache(process.env.REDIS_URI);
 
         this.throttle = new HttpThrottle(this);
@@ -158,6 +191,8 @@ class AppBase extends HttpRequest {
         this.subscribe_lifecycle_events(this.handle_uid, false);
         
         if (this.update_configs) await this.update_configs();
+
+        this.setup_lifecycle_events_subscription();
 
         this.started_at = Date.now();;
 
@@ -227,15 +262,39 @@ class AppBase extends HttpRequest {
 
     }
 
-    async initialize_data() {
-        const entries = [];
-        for (const [key, data] of Object.entries(default_configs)) {
-            entries.push({key, data});
-        }
-        if (entries.length > 0) {
-            await this.strapi.db.query(this.config_uid).createMany({data: entries});
+    setup_lifecycle_events_subscription() {
+        const { uids } = this.get_config('LifecycleEventsSubscription', false) || {};
+        if (uids && uids.length > 0) {
+            for (const uid of uids) {
+                if (!this.strapi.contentTypes[uid]) continue;
+                this.subscribe_lifecycle_events(uid, false);
+            }
         }
     }
+
+    async update_configs() {
+
+        const items1 = await this.strapi.db.query(this.config_uid).findMany();
+
+        if (items1.length > 0) {
+            for (const item of items1) this.update_config(item);
+        } else {
+            const entries = [];
+            for (const [key, data] of Object.entries(default_configs)) {
+                entries.push({key, data});
+            }
+            if (entries.length > 0) {
+                await this.strapi.db.query(this.config_uid).createMany({data: entries});
+            }
+            if (this.initialize_data) await this.initialize_data();
+        }
+
+        const items2 = await this.strapi.db.query(this.handle_uid).findMany();
+        if (items2.length > 0) {
+            for (const item of items2) this.update_config(item);
+        }
+    }
+
 }
 
 module.exports = AppBase;

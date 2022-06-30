@@ -83,5 +83,9 @@ module.exports = {
         cors_allowed_methods: ['GET', 'HEAD', 'OPTIONS'],
         cors_max_age: 2592000,
 
+    },
+
+    LifecycleEventsSubscription: {
+        uids: [],
     }
 };

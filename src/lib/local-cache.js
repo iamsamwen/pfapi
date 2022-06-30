@@ -1,8 +1,5 @@
 'us strict';
 
-const fp = require('lodash/fp');
-const get_class_config = require('../utils/get-class-config');
-
 /**
  * 
  * permanent = true is used for configs, to enable get config data without delay
@@ -12,7 +9,7 @@ const get_class_config = require('../utils/get-class-config');
 class LocalCache {
 
     constructor(config = {}) {
-        Object.assign(this, get_class_config(this, config));
+        Object.assign(this, config);
         this.cache_data = new Map();
         this.maintenance();
     }

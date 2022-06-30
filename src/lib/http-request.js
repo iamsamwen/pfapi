@@ -4,7 +4,6 @@ const Refreshable = require('./refreshable');
 const Cacheable = require('./cacheable');
 const Composite = require('./composite');
 const HttpResponse = require('./http-response');
-const get_config = require('../app/get-config');
 const get_params = require('../utils/get-params');
 
 class HttpRequest {
@@ -90,15 +89,24 @@ class HttpRequest {
             cacheable = new Cacheable({params, refreshable});
         
             if (params.ss_rand) {
+
                 if (await cacheable.get()) {
+
                     this.http_response.handle_nocache_request(ctx, 200, cacheable.data, cacheable.content_type);
+
                 } else {
+
                     this.http_response.handle_nocache_request(ctx, 404, {message: 'Not Found'});
+
                 }
             } else {
+
                 if (await cacheable.get(this.local_cache, this.redis_cache)) {
+
                     this.http_response.handle_cacheable_request(ctx, cacheable);
+
                 } else {
+
                     this.http_response.handle_nocache_request(ctx, 404, {message: 'Not Found'});
                 }
             }
@@ -106,8 +114,11 @@ class HttpRequest {
         } catch (err) {
 
             if (err.message.startsWith('Not Found')) {
+
                 this.http_response.handle_nocache_request(ctx, 404, {message: err.message});
+
             } else {
+
                 console.error(err);
                 this.http_response.handle_nocache_request(ctx, 500, {message: 'failed'});
             }
@@ -120,8 +131,8 @@ class HttpRequest {
     
         const data = {};
     
-        if (params.handle) {
-            const config = get_config(params.handle, true);
+        if  (params.handle && this.get_config) {
+            const config = this.get_config(params.handle, true);
             if (config && config.attributes) {
                 Object.assign(data, config.attributes);
             }
@@ -135,10 +146,9 @@ class HttpRequest {
     
         for (const [key, value] of Object.entries(composite)) {
             if (value instanceof Refreshable) {
-                data[key] = null;
                 promises.push(this.run_refreshable(key, params, value, result));
-            } else if (typeof value !== 'function') {
-                if (data[key] === undefined) data[key] = value;
+            } else if (data[key] === undefined) {
+                data[key] = value;
             }
         }
     

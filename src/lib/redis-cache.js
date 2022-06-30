@@ -39,29 +39,23 @@ class RedisCache extends RedisBase {
         const multi = client.multi();
         multi.psetex(data_key, data_ttl, cacheable.data_value);
         multi.hmset(info_key, ...cacheable.info_args);
+        let count = 2;
         // to allow info_key to expire within cacheable.info_ttl
         if (cacheable.created_time === cacheable.timestamp) {
             multi.pexpire(info_key, cacheable.info_ttl);
+            count++;
         }
         if (cacheable.to_refresh) {
             const ttl = cacheable.data_ttl;
             const value = JSON.stringify({timestamp: Date.now, ttl});
             multi.psetex(exp_key, ttl, value);
+            count++;
         }
         const result = await multi.exec();
-        if (cacheable.to_refresh) {
-            if (result.length !== 4) return false;
-            if (result[3][1] !== 'OK') return false;
-        } else {
-            if (result.length !== 3) return false;
-        }
-        if (result[0][1] !== 'OK') return false;
-        if (result[1][1] !== 'OK') return false;
-        if (result[2][1] !== 1) return false;
         if (cacheable.dependent_keys) {
             this.update_dependencies(client, cacheable, data_ttl);
         }
-        return true;
+        return result.length === count;
     }
 
     async get_info(cacheable) {
@@ -87,10 +81,7 @@ class RedisCache extends RedisBase {
         multi.hmset(info_key, ...cacheable.info_args),
         multi.pexpire(info_key, cacheable.info_ttl);
         const result = await multi.exec();
-        if (result.length !== 2) return false;
-        if (result[0][1] !== 'OK') return false;
-        if (result[1][1] !== 1) return false;
-        return true;
+        return result.length === 2;
     }
 
     async delete(cacheable, ignore_invalidation = false) {
@@ -101,21 +92,16 @@ class RedisCache extends RedisBase {
         const data_key = get_redis_key('DATA', cacheable.key);
         const exp_key = get_redis_key('EXP', cacheable.key);
         const no_exp_key = 'NO-' + exp_key;
+        let count = 2;
         const multi = client.multi();
         if (ignore_invalidation) {
             multi.psetex(no_exp_key, 3000, 1);
+            count++;
         }
         multi.del(data_key);
         multi.del(exp_key);
         const result = await multi.exec();
-        if (ignore_invalidation) {
-            if (result.length !== 3) return false;
-            if (result[1][1] !== 1) return false;
-        } else {
-            if (result.length !== 2) return false;
-            if (result[0][1] !== 1) return false;
-        }
-        return true;
+        return result.length === count;
     }
 
     async delete_all(cacheable) {
@@ -131,10 +117,7 @@ class RedisCache extends RedisBase {
         multi.del(info_key);
         multi.del(exp_key);
         const result = await multi.exec();
-        if (result.length !== 3) return false;
-        if (result[0][1] !== 1) return false;
-        if (result[1][1] !== 1) return false;
-        return true;
+        return result.length === 3;
     }
 
     async has_data(key) {
@@ -153,6 +136,7 @@ class RedisCache extends RedisBase {
 
     update_dependencies(client, cacheable, data_ttl) {
         const handle = setTimeout(async () => {
+            if (process.env.DEBUG_DEPENDENTS) console.log('update_dependencies', cacheable.dependent_keys.length);
             for (const key of cacheable.dependent_keys) {
                 const dep_key = get_redis_key('DEP', key);
                 const multi = client.multi();
@@ -170,7 +154,11 @@ class RedisCache extends RedisBase {
     }
 
     /**
-     * mainly used for debug
+     * helper methods for debug only
+     */
+
+    /**
+     * get data associated with a key
      * 
      * @param {*} key 
      * @returns 
@@ -199,12 +187,23 @@ class RedisCache extends RedisBase {
         if (result[2][1] && Object.keys(result[2][1]).length > 0) {
             data.dep = result[2][1];
             data.dep_ttl = await client.ttl(dep_key);
+        } else {
+            const client = await this.get_client();
+            const deps_keys = await client.keys('DEP::*');
+            data.dependents = [];
+            for (const dep_key of deps_keys) {
+                if (await client.sismember(dep_key, key)) {
+                    const ttl = await client.ttl(dep_key);
+                    const result = get_prefix_key(dep_key);
+                    data.dependents.push({key: result.key, ttl});
+                }
+            }
         }
         return data;
     }
 
     /**
-     * use for debug only
+     * list all data
      * 
      * @param {*} query 
      * @returns 
@@ -236,6 +235,25 @@ class RedisCache extends RedisBase {
             }
             return result;
         }
+    }
+
+    /**
+     * list all dependent keys
+     * 
+     * @returns 
+     */
+    async deps() {
+        const client = await this.get_client();
+        const deps_keys = await client.keys('DEP::*');
+        if (deps_keys.length === 0) return [];
+        const data = [];
+        for (const dep_key of deps_keys) {
+            const keys = await client.smembers(dep_key);
+            const ttl = await client.ttl(dep_key);
+            const { key } = get_prefix_key(dep_key);
+            data.push({[key]: {ttl, keys}});
+        }
+        return data;
     }
 }
 

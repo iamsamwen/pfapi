@@ -21,11 +21,13 @@ const Servers = require('./servers');
 
 class AppBase extends HttpRequest {
     
-    constructor(config_uid, handle_uid) {
+    constructor(strapi, config, config_uid, handle_uid) {
         super();
-        global.PfapiApp = this;
+        this.strapi = strapi;
+        this.config = config;
         this.config_uid = config_uid;
         this.handle_uid = handle_uid;
+        global.PfapiApp = this;
     }
 
     get_config_key(key, is_handle) {
@@ -231,7 +233,7 @@ class AppBase extends HttpRequest {
             entries.push({key, data});
         }
         if (entries.length > 0) {
-            await this.strapi.query(config_uid).createMany({data: entries});
+            await this.strapi.query(this.config_uid).createMany({data: entries});
         }
     }
 }

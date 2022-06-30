@@ -1,7 +1,7 @@
 {
   "name": "strapi-pfapi",
   "version": "1.6.2",
-  "description": "a strapi plugin library uses local and redis caches to achieve pretty fast - single digit milliseconds on average api response time.",
+  "description": "a strapi plugin library uses local and redis caches to achieve single digit milliseconds on average api response time.",
   "bugs": {
     "url": "https://github.com/iamsamwen/strapi-pfapi/issues"
   },

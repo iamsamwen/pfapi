@@ -55,6 +55,8 @@ yarn develop
 
 ```
 
+![Admin Panel](https://github.com/iamsamwen/strapi-pfapi/blob/main/images/screen-shot1.png)
+
 ### step 5 test pfapi
 
 

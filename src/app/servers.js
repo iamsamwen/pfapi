@@ -50,7 +50,7 @@ class Servers extends RedisPubsub {
     }
 
     evict_local_cache({keys}, from) {
-        if (from === this.uuid || !this.app.local_cache) return;
+        if (from === this.uuid) return;
         if (!keys || keys.length === 0) return;
         for (const key of keys) this.local_cache.delete(key);
     }
@@ -75,7 +75,8 @@ class Servers extends RedisPubsub {
         if (process.env.DEBUG_LIFECYCLES) console.log('on_db_delete', {uid, data});
         if (uid && data) {
             if ([this.config_uid, this.handle_uid].includes(uid)) {
-                this.app.del_config(data.name, this.handle_uid === uid);
+                this.app.del_config(data.handle, this.handle_uid === uid);
+                await this.evict_dependent(uid, data.key || data.handle);
             } else {
                 await this.evict_dependent(uid, data.id);
             }

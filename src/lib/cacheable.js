@@ -254,10 +254,7 @@ class Cacheable {
         }
         await this.get_data();
         if (redis_cache) {
-            const result = await redis_cache.set_cacheable(this);
-            if (process.env.DEBUG_REDIS) {
-                console.log('set_cacheable:', this.key, result);
-            }
+            await redis_cache.set_cacheable(this);
         }
         return true;
     }

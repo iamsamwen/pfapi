@@ -267,6 +267,7 @@ class AppBase extends HttpRequest {
         if (uids && uids.length > 0) {
             for (const uid of uids) {
                 if (!this.strapi.contentTypes[uid]) continue;
+                if (this.config.allowed_uids && !this.config.allowed_uids.includes(uid)) continue;
                 this.subscribe_lifecycle_events(uid, false);
             }
         }

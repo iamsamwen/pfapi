@@ -124,8 +124,7 @@ class RedisCache extends RedisBase {
         const client = await this.get_client();
         const data_key = get_redis_key('DATA', key);
         const value = await client.exists(data_key);
-        if (value) return true;
-        else return false;
+        return !!value;
     }
 
     async get_dependencies(dependency_key) {
@@ -136,14 +135,15 @@ class RedisCache extends RedisBase {
 
     update_dependencies(client, cacheable, data_ttl) {
         const handle = setTimeout(async () => {
-            if (process.env.DEBUG_DEPENDENTS) console.log('update_dependencies', cacheable.dependent_keys.length);
+            if (process.env.DEBUG_DEPENDENTS) {
+                console.log('update_dependencies', cacheable.dependent_keys.length);
+            }
             for (const key of cacheable.dependent_keys) {
                 const dep_key = get_redis_key('DEP', key);
                 const multi = client.multi();
                 multi.sadd(dep_key, cacheable.key);
                 multi.pexpire(dep_key, data_ttl);
                 const result = await multi.exec();
-                // result[1][1] can be 0 or 1 if already exists it is 0
                 if (result.length !== 2 || result[1][1] !== 1) {
                     console.error('update_dependencies, failed for', key, result);
                 }

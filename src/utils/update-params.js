@@ -2,7 +2,7 @@
 
 const get_config = require('../app/get-config');
 const merge_filters = require('./merge-filters');
-const get_config_key = require('./get-config-key');
+const get_config_key = require('../app/get-config-key');
 
 module.exports = (params) => {
     

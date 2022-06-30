@@ -60,6 +60,7 @@ class Servers extends RedisPubsub {
         if (uid && data) {
             if ([this.config_uid, this.handle_uid].includes(uid)) {
                 this.app.update_config(data);
+                await this.evict_dependent(uid, data.key || data.handle);
             } else if (data.id) {
                 await this.evict_dependent(uid, data.id);
             }

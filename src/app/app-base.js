@@ -8,8 +8,7 @@ const HttpRequest = require('../lib/http-request');
 const RefreshQueue = require('../lib/refresh-queue');
 const ExpiresWatch = require('../lib/expires-watch');
 
-const get_config_key = require('../utils/get-config-key');
-const get_item_config_key = require('../utils/get-item-config-key');
+const get_dependency_key = require('../utils/get-dependency-key');
 const get_params = require('../utils/get-params');
 const get_params_uid = require('../utils/get-params-uid');
 const update_params_id = require('../utils/update-params-id');
@@ -29,43 +28,44 @@ class AppBase extends HttpRequest {
         this.handle_uid = handle_uid;
     }
 
-    get_config(name, is_handle) {
+    get_config_key(key, is_handle) {
+        const uid = is_handle ? this.handle_uid : this.config_uid;
+        return get_dependency_key({uid, id: key})
+    }
+
+    get_config(key, is_handle) {
         const local_cache = this.local_cache;
         if (!local_cache) return null;
-        const key = get_config_key(name, is_handle)
-        return local_cache.get(key);
+        const config_key = this.get_config_key(key, is_handle);
+        return local_cache.get(config_key);
     }
 
     del_config(key, is_handle) {
         if (!this.local_cache || !key) return false;
-        const config_key = get_config_key(key, is_handle);
         this.local_cache.delete(config_key);
         if (key === this.constructor.name) {
             this.config = default_config;
             this.apply_config();
         } else if (is_handle) {
-            this.servers.evict_dependent(key, true);
+            const uid = is_handle ? this.handle_uid : this.config_uid;
         }
     }
 
     update_config(item) {
-        if (!this.local_cache || !item) return false;
-        const key = get_item_config_key(item);
-        if (!key) return false;
+        if (!this.local_cache || !item || (!item.handle && !item.key)) return false;
+        const config_key = this.get_config_key(item.handle || item.key, !!item.handle);
         const data = normalize_data(item);
-        const old_data = this.local_cache.get(key);
+        const old_data = this.local_cache.get(config_key);
         if (fp.isEqual(data, old_data)) return true;
-        this.local_cache.put(key, data, true);
+        this.local_cache.put(config_key, data, true);
         this.apply_config(item, data);
         return true;
     }
 
-    apply_config({key, handle}, data) {
+    apply_config({key}, data) {
         if (key === this.constructor.name) {
             this.strapi.app.proxy = !!data.proxy;
             this.throttle.apply_rate_limits(data.rate_limits);
-        } else if (handle) {
-            this.servers.evict_dependent(handle, true);
         }
     }
 
@@ -147,10 +147,10 @@ class AppBase extends HttpRequest {
 
         this.throttle = new HttpThrottle(this);
     
+        if (this.strapi) this.strapi.PfapiApp = this;
+
         this.servers = new Servers(this);
         await this.servers.start();
-
-        if (this.strapi) this.strapi.PfapiApp = this;
 
         this.subscribe_lifecycle_events(this.config_uid, false);
         this.subscribe_lifecycle_events(this.handle_uid, false);

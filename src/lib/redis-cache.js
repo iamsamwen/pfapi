@@ -212,6 +212,7 @@ class RedisCache extends RedisBase {
     async list(query) {
         const client = await this.get_client();
         const data_keys = await client.keys('DATA::*');
+        if (data_keys.length === 0) return [];
         const values = await client.mget(data_keys);
         const data = [];
         for (let i = 0; i < data_keys.length; i++) {

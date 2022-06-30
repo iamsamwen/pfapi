@@ -233,7 +233,7 @@ class AppBase extends HttpRequest {
             entries.push({key, data});
         }
         if (entries.length > 0) {
-            await this.strapi.query(this.config_uid).createMany({data: entries});
+            await this.strapi.db.query(this.config_uid).createMany({data: entries});
         }
     }
 }

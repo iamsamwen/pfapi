@@ -71,7 +71,7 @@ describe('Test cacheable-2', () => {
     it('get with local cache and redis cache', async () => {
 
         const local_cache = new LocalCache({default_ttl: 50});
-
+        //console.log(local_cache)
         const redis_cache = new RedisCache();
         
         await redis_cache.flushall();

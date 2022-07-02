@@ -4,6 +4,7 @@ const RedisPubsub = require('../lib/redis-pubsub');
 const Cacheable = require('../lib/cacheable');
 const get_dependency_key = require('../utils/get-dependency-key');
 const lifecycles = require('./lifecycles');
+const uids_config = require('./uids-config');
 
 class Servers extends RedisPubsub {
 
@@ -12,8 +13,6 @@ class Servers extends RedisPubsub {
         this.local_cache = app.local_cache;
         this.app = app;
         this.strapi = app.strapi;
-        this.config_uid = app.config_uid;
-        this.handle_uid = app.handle_uid;
         this.instances = [];
         this.subscribed_uids = [];
     }
@@ -59,9 +58,15 @@ class Servers extends RedisPubsub {
         const {uid, data} = message;
         if (process.env.DEBUG_LIFECYCLES) console.log('on_db_upsert', {uid, data});
         if (uid && data) {
-            if ([this.config_uid, this.handle_uid].includes(uid)) {
-                this.app.update_config(data);
-                await this.evict_dependent(uid, data.key || data.handle);
+            const uids = Object.values(uids_config);
+            if (uids.includes(uid)) {
+                // state_uid is for internal use, not suppose to change through admin
+                if (uid === uids_config.state_uid) return;
+                this.app.update_config(uid, data);
+                // dependency only happens to config_uid and handle_uid, 
+                if (uids_config.config_uid === uid || uids_config.handle_uid === uid) {
+                    await this.evict_dependent(uid, data.key || data.handle);
+                }
             } else if (data.id) {
                 await this.evict_dependent(uid, data.id);
             }
@@ -74,9 +79,15 @@ class Servers extends RedisPubsub {
         const {uid, data} = message;
         if (process.env.DEBUG_LIFECYCLES) console.log('on_db_delete', {uid, data});
         if (uid && data) {
-            if ([this.config_uid, this.handle_uid].includes(uid)) {
-                this.app.del_config(data.handle, this.handle_uid === uid);
-                await this.evict_dependent(uid, data.key || data.handle);
+            const uids = Object.values(uids_config);
+            if (uids.includes(uid)) {
+                // state_uid is for internal use, not suppose to change through admin
+                if (uid === uids_config.state_uid) return;
+                this.app.del_config(uid, data);
+                // dependency only happens to config_uid and handle_uid, 
+                if (uids_config.config_uid === uid || uids_config.handle_uid === uid) {
+                    await this.evict_dependent(uid, data.key || data.handle);
+                }
             } else {
                 await this.evict_dependent(uid, data.id);
             }
@@ -147,13 +158,15 @@ class Servers extends RedisPubsub {
         }
         if (this.subscribed_uids.includes(uid)) return;
         if (this.is_primary()) {
-            const key = 'LifecycleEventsSubscription';
-            const { uids } = this.app.get_config(key, false);
-            if (!uids.includes(uid)) {
-                uids.push(uid);
-                const data = {data: {uids}};
-                 this.strapi.db.query(this.config_uid).update({where: {key}, data});
-            }
+            this.strapi.entityService.findOne(this.app.state_uid).then(result => {
+                console.log(result);
+                if (!result) return;
+                const id = result.id;
+                const lifecycle_uids = result.lifecycle_uids || [];
+                if (lifecycle_uids.includes(uid)) return;
+                lifecycle_uids.push(uid);
+                this.strapi.entityService.update(this.app.state_uid, {filters: {id}, data: {lifecycle_uids}});
+            })
         }
         this.subscribed_uids.push(uid);
         if (publish) this.publish({uid, action: 'subscribe-db-event'});

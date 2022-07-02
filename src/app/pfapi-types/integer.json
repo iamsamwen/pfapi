@@ -1,0 +1,21 @@
+{
+  "collectionName": "components_pfapi_types_integers",
+  "info": {
+    "displayName": "Integer",
+    "icon": "american-sign-language-interpreting",
+    "description": ""
+  },
+  "options": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "value": {
+      "type": "integer"
+    },
+    "comment": {
+      "type": "string"
+    }
+  }
+}

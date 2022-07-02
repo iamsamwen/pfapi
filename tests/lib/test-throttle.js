@@ -22,7 +22,7 @@ describe('test throttle', () => {
         
         const throttle = new Throttle(redis_cache, local_cache);
 
-        throttle.set_throttle(1, 3, 1);
+        throttle.add_throttle({window_secs: 1, max_count: 3, block_secs: 1});
 
         expect(throttle.is_throttled('target')).is.false;
         expect(throttle.is_throttled('target')).is.false;

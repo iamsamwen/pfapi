@@ -1,5 +1,6 @@
 'use strict';
 
+const default_configs = require('../app/default-configs');
 const get_config = require('../app/get-config')
 const get_body = require('../utils/get-body');
 const { get_etag, parse_etag } = require('../utils/etag');
@@ -8,8 +9,59 @@ class HttpResponse {
 
     constructor(request) {
         this.request = request;
-        this.config = get_config(this.constructor.name, false);
+        this.config = default_configs['HttpResponse'];
     }
+
+    handle_cacheable_request(ctx, cacheable) {
+
+        const method = ctx.request.method;
+
+        switch (method) {
+            case 'OPTIONS':
+                this.handle_options_request(ctx);
+                break;
+            case 'HEAD':
+                this.handle_head_get_request(ctx, cacheable, true);
+                break;
+            case 'GET': 
+                this.handle_head_get_request(ctx, cacheable);
+                break;
+            default:
+                this.handle_nocache_request(ctx, 405, {message: `Method Not Allowed: ${ctx.request.method}`});
+        }
+
+    }
+
+    handle_nocache_request(ctx, status = 200, data, content_type) {
+
+        const method = ctx.request.method;
+
+        if (method === 'OPTIONS' && status < 400) {
+            this.handle_options_request(ctx);
+            return;
+        }
+        
+        if (method !== 'HEAD' && method !== 'GET' && status < 400) {
+            this.handle_nocache_request(ctx, 405, {message: `Method Not Allowed: ${ctx.request.method}`});
+            return;
+        }
+
+        const { headers } = this.prepare_headers(ctx);
+        
+        if (data && status !== 204 && status !== 304) {
+            ctx.body = get_body(data);
+            ctx.type = content_type ? content_type : this.config.content_type;
+        }
+
+        for (const [key, value] of Object.entries(headers)) ctx.set(key, value);
+
+        ctx.status = status;
+    }
+
+    /**
+     * helper methods
+     */
+
 
     handle_origin(ctx, headers) {
 
@@ -35,64 +87,14 @@ class HttpResponse {
         
         } else {
 
-            const {cors_exposed_headers, cors_allow_headers, cors_allowed_methods, 
-                cors_max_age, cors_additional} = this.config;
+            const {cors_exposed_headers, cors_allow_headers, cors_allowed_methods, cors_max_age} = this.config;
 
-            headers['Access-Control-Expose-Headers'] = cors_exposed_headers.join(', ');
-            headers['Access-Control-Allow-Methods'] = cors_allowed_methods.join(', ');
-            headers['Access-Control-Allow-Headers'] = cors_allow_headers.join(', ');
+            headers['Access-Control-Expose-Headers'] = typeof cors_exposed_headers === 'string' ? cors_exposed_headers : cors_exposed_headers.join(', ');
+            headers['Access-Control-Allow-Methods'] = typeof cors_allowed_methods === 'string' ?  cors_allowed_methods : cors_allowed_methods.join(', ');
+            headers['Access-Control-Allow-Headers'] = typeof cors_allow_headers === 'string' ?  cors_allow_headers : cors_allow_headers.join(', ');
             headers['Access-Control-Max-Age'] = cors_max_age;
-            if (cors_additional) Object.assign(headers, cors_additional);
     
         }
-    }
-
-    handle_cacheable_request(ctx, cacheable) {
-
-        this.config = get_config(this.constructor.name, false);
-        const method = ctx.request.method;
-
-        switch (method) {
-            case 'OPTIONS':
-                this.handle_options_request(ctx);
-                break;
-            case 'HEAD':
-                this.handle_head_get_request(ctx, cacheable, true);
-                break;
-            case 'GET': 
-                this.handle_head_get_request(ctx, cacheable);
-                break;
-            default:
-                this.handle_nocache_request(ctx, 405, {message: `Method Not Allowed: ${ctx.request.method}`});
-        }
-
-    }
-
-    handle_nocache_request(ctx, status = 200, data, content_type) {
-
-        this.config = get_config(this.constructor.name, false);
-        const method = ctx.request.method;
-
-        if (method === 'OPTIONS' && status < 400) {
-            this.handle_options_request(ctx);
-            return;
-        }
-        
-        if (method !== 'HEAD' && method !== 'GET' && status < 400) {
-            this.handle_nocache_request(ctx, 405, {message: `Method Not Allowed: ${ctx.request.method}`});
-            return;
-        }
-
-        const { headers } = this.prepare_headers(ctx);
-        
-        if (data && status !== 204 && status !== 304) {
-            ctx.body = get_body(data);
-            ctx.type = content_type ? content_type : this.config.content_type;
-        }
-
-        for (const [key, value] of Object.entries(headers)) ctx.set(key, value);
-
-        ctx.status = status;
     }
 
     handle_head_get_request(ctx, cacheable, head_only = false) {
@@ -184,7 +186,10 @@ class HttpResponse {
         headers['Cache-Control'] = 'max-age=0, no-store, must-revalidate';
         headers['Expires'] = new Date(now_ms).toGMTString();
 
-        if (this.config.allow_methods) headers['Allow'] = this.config.allow_methods.join(', ');
+        if (this.config.allow_methods) {
+            headers['Allow'] = typeof this.config.allow_methods === 'string' ?
+                this.config.allow_methods : this.config.allow_methods.join(', ')
+        }
 
         this.handle_origin(ctx, headers);
 

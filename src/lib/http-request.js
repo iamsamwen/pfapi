@@ -5,6 +5,7 @@ const Cacheable = require('./cacheable');
 const Composite = require('./composite');
 const HttpResponse = require('./http-response');
 const get_params = require('../utils/get-params');
+const uids_config = require('../app/uids-config');
 
 class HttpRequest {
 
@@ -132,7 +133,7 @@ class HttpRequest {
         const data = {};
     
         if  (params.handle && this.get_config) {
-            const config = this.get_config(params.handle, true);
+            const config = ctx.state.pfapi.config;
             if (config && config.attributes) {
                 Object.assign(data, config.attributes);
             }

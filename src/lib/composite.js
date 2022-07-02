@@ -4,7 +4,7 @@
  * Composite provides mechanism to aggregate multiple data sources into one response
  * 
  * 1) static data: defined within the subclass
- * 2) configurable data: config referred by handle, all key values from attributes property
+ * 2) configurable data: config referred by handle, all name values from attributes property
  * 3) refreshable: will call get_data    
  */
 class Composite {

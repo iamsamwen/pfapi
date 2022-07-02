@@ -1,0 +1,21 @@
+{
+  "collectionName": "components_pfapi_types_bools",
+  "info": {
+    "displayName": "bool",
+    "icon": "allergies",
+    "description": ""
+  },
+  "options": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "value": {
+      "type": "boolean"
+    },
+    "comment": {
+      "type": "string"
+    }
+  }
+}

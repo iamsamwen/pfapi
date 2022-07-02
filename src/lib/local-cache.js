@@ -1,4 +1,6 @@
-'us strict';
+'use strict';
+
+const default_configs = require('../app/default-configs');
 
 /**
  * 
@@ -8,8 +10,9 @@
 
 class LocalCache {
 
-    constructor(config = {}) {
-        Object.assign(this, config);
+    constructor(config) {
+        this.config = default_configs['LocalCache'];
+        if (config) Object.assign(this.config, config);
         this.cache_data = new Map();
         this.maintenance();
     }
@@ -24,7 +27,8 @@ class LocalCache {
         const ttl = cacheable.data_ttl - (now_ms - timestamp);
         if (ttl <= 0) return false;
         const object = cacheable.plain_object;
-        object.expires_at = now_ms + ( ttl < this.default_ttl ? ttl : this.default_ttl );
+        const default_ttl = this.config.default_ttl;
+        object.expires_at = now_ms + ( ttl < default_ttl ? ttl : default_ttl );
         this.cache_data.set(cacheable.key, object);
         return true;
     }
@@ -46,7 +50,8 @@ class LocalCache {
             object.ttl = ttl;
             object.expires_at = now_ms + ttl;
         } else {
-            object.expires_at = now_ms + this.default_ttl;
+            const default_ttl = this.config.default_ttl;
+            object.expires_at = now_ms + default_ttl;
         }
         this.cache_data.set(key, object);
         return true;
@@ -135,7 +140,12 @@ class LocalCache {
                     this.cache_data.delete(key);
                 }
             }
-        }, this.timer_interval);
+            if (this.cache_data.size >= this.config.max_size) {
+                console.error('local cache size reached max_size (${this.config.max_size})');
+            } else if (this.cache_data.size > this.config.max_size * 0.8) {
+                console.warn('local cache size reached 80 percent of max_size (${this.config.max_size})');
+            }
+        }, this.config.timer_interval);
     }
 }
 

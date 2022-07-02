@@ -10,7 +10,7 @@ With database indexing and query optimizations, the single-digit milliseconds AP
 
 strapi-pfapi uses HTTP headers: etag, cache-control, expires, if-modified-since and if-none-match to take advantage of the browser-side cache. It reliefs impact of round-trip delay and data traffic between browser and api server.
 
-The Refreshable class makes it possible to get data from Strapi query API and other API services and databases. The Composite class aggregates result from multiple Refreshable objects and attributes in config into one response. Query params, such as fields, filters, populate, etc., are defined in the config and accessible without delay through the local cache.
+The Refreshable class makes it possible to get data from Strapi query API and other API services and databases. The Composite class aggregates result from multiple Refreshable objects and name value components of dynamic zone in config into one response. Query params, such as fields, filters, populate, etc., are defined in the config and accessible without delay through the local cache.
 
 A production environment runs multiple Strapi servers and Redis cluster to avoid single-point failure. It supports the production environment and auto-reconnect to the Redis server once restarted.
 

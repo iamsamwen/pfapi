@@ -1,0 +1,29 @@
+{
+  "collectionName": "components_pfapi_types_media",
+  "info": {
+    "displayName": "media",
+    "icon": "address-book",
+    "description": ""
+  },
+  "options": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "value": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "comment": {
+      "type": "string"
+    }
+  }
+}

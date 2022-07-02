@@ -23,17 +23,6 @@ class Throttle {
     }
 
     /**
-     *
-     * @param {*} rate_limits 
-     */
-    apply_rate_limits(rate_limits) {
-        this.reset();
-        for (const {window_secs, max_count, block_secs} of rate_limits) {
-            this.set_throttle(window_secs, max_count, block_secs);
-        }
-    }
-
-    /**
      * reset throttles
      */
     reset() {
@@ -43,24 +32,16 @@ class Throttle {
     /**
      * 
      * @param {*} window_secs 
-     * @param {*} max_count if max_count is null or undefined, it will remove the window_secs
+     * @param {*} max_count 
      * @param {*} block_secs 
      */
-    set_throttle(window_secs, max_count, block_secs) {
-        if (!window_secs) {
-            throw new Error('setup_throttle, missing required arguments');
+    add_throttle(rate_limit) {
+        if (!rate_limit.window_secs || !rate_limit.max_count) {
+            throw new Error('add_throttle, missing required arguments window_secs and/or max_count: ' + JSON.stringify(rate_limit));
         }
-        const index = this.throttles.findIndex(x => x.window_secs === window_secs);        
-        if (!max_count) {
-            if (index !== -1) {
-                this.throttles.splice(index, 1);
-            }
-            return;
-        }
-        const throttle = index === -1 ? {window_secs} : this.throttles[index];
-        if (index === -1) this.throttles.push(throttle);
-        throttle.max_count = max_count;
-        throttle.block_secs = block_secs ? block_secs : window_secs * 10;
+        let { window_secs, max_count, block_secs, ...params} = rate_limit;
+        if (!block_secs) block_secs = window_secs * 10;
+        this.throttles.push({window_secs, max_count, block_secs, params});
     }
 
     /**
@@ -82,11 +63,13 @@ class Throttle {
      *  it targets to the group of requests for the path prefix
      * 
      * by returning null means the target is white listed
+     * by returning false means not match
      * 
      * @param {*} target for reducing
+     * @param {*} params for matching pattern
      * @returns 
      */
-    get_signature(target) {
+    get_signature(target, params) {
         return target;
     }
 
@@ -97,14 +80,17 @@ class Throttle {
      * @returns 
      */
     is_throttled(target) {
-        const signature = this.get_signature(target);
-        if (!signature) return null;
         const signatures = {};
+        let count = 0;
         for (const throttle of this.throttles) {
-            const { window_secs } = throttle;
-            const key = get_checksum({window_secs, signature});
+            const signature = this.get_signature(target, throttle.params);
+            if (signature === null) return null;
+            if (signature === false) continue;
+            const key = get_checksum({window_secs: throttle.window_secs, signature});
             signatures[key] = throttle;
+            count++;
         }
+        if (count === 0) return false;
         const handle = setTimeout(async () => {
             await this.update_target(signatures);
             clearTimeout(handle);

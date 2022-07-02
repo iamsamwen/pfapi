@@ -1,0 +1,20 @@
+{
+  "collectionName": "components_pfapi_types_jsons",
+  "info": {
+    "displayName": "json",
+    "icon": "apple-alt"
+  },
+  "options": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "value": {
+      "type": "json"
+    },
+    "comment": {
+      "type": "string"
+    }
+  }
+}

@@ -15,8 +15,8 @@ module.exports = {
         // when it starts to consider as slow
         slow_duration: 500,
 
-        // data age_ms since last update to start refresh
-        early_refresh_start: 70000,
+        // data ttl in ms since last update to start refresh
+        early_refresh_start: 60000,
     
         // if duration is more than early_refresh_duration, start
         early_refresh_duration: 1000,
@@ -60,7 +60,7 @@ module.exports = {
         max_queue_size: 8192 * 2
     },
 
-    PubSub: {
+    RedisPubsub: {
         
         channel_name: 'PUBSUB::CHANNEL',
 
@@ -71,21 +71,40 @@ module.exports = {
 
         server_name: '',
 
-        stale_secs: null,
+        stale_secs: 60,
 
-        allow_methods: ['GET', 'HEAD', 'OPTIONS'],
+        allow_methods: 'GET, HEAD, OPTIONS',
 
         content_type: 'application/json; charset=utf-8',
 
-        cors_exposed_headers: [ 'Authorization', 'Content-Type', 'Accept', 'Accept-Language'],
-        cors_allow_headers: [ 'Content-Type', 'Accept', 'Accept-Language'],
+        cors_exposed_headers: 'Authorization, Content-Type, Accept, Accept-Language',
+        cors_allow_headers: 'Content-Type, Accept, Accept-Language',
         cors_allow_credentials: true,
-        cors_allowed_methods: ['GET', 'HEAD', 'OPTIONS'],
+        cors_allowed_methods: 'GET, HEAD, OPTIONS',
         cors_max_age: 2592000,
 
     },
 
-    LifecycleEventsSubscription: {
-        uids: [],
-    }
+    PfapiApp: {
+
+        maintenance_interval: 10000,
+        
+        config_sync_interval: 3600000,
+    
+        proxy: true
+    },
+
+    RateLimit: [
+        {ip_mask: '255.255.255.255', prefix: '', window_secs: 10, max_count: 1000, block_secs: 3600, comment: 'average 100 calls per seconds, 1000 calls within 10 seconds'},
+        {ip_mask: '255.255.255.255', prefix: '', window_secs: 300, max_count: 10000, block_secs: 3600, comment: 'average 33 calls per seconds  10000 calls with 5 minutes'}
+    ],
+
+    Ip: [
+        {ip: '127.0.0.1', status: 'white-list', comment: 'call from localhost'}
+    ],
+
+    DemoRole: {name: 'PfapiDemo', description: 'Pfapi demo role', type: 'pfapidemo'},
+
+    DemoKey: {key: 'Pfapi-Demo', blocked: false, comment: 'demo and test key', role: 'PfapiDemo' },
+
 };

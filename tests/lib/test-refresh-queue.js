@@ -10,7 +10,7 @@ const sleep = require('../helpers/sleep');
 
 const expect = chai.expect;
 
-// NODE_ENV=test mocha --timeout 30000 --reporter spec tests/utils/test-refresh-queue
+// NODE_ENV=test mocha --timeout 30000 --reporter spec tests/lib/test-refresh-queue
 
 class RefreshQueueTest extends RefreshQueue {
     constructor(redis_cache, local_cache, for_test) {

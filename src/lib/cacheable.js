@@ -5,7 +5,7 @@ const fp = require('lodash/fp');
 const { info_keys, update_info } = require('./info-keys'); 
 const get_checksum = require('../utils/get-checksum');
 const get_cache_key = require('../utils/get-cache-key');
-const get_class_config = require('../utils/get-class-config');
+const get_config = require('../app/get-config');
 const get_body = require('../utils/get-body');
 const get_value = require('../utils/get-value');
 const get_dependent_keys = require('../app/get-dependent-keys');
@@ -27,7 +27,8 @@ class Cacheable {
             this.module_path = this.refreshable.module_path;
         }
         this.plain_object = object;
-        this.config = get_class_config(this, config);
+        this.config = get_config('Cacheable');
+        if (config) Object.assign(this.config, config);
         if (process.env.NODE_ENV === 'test') this.from = '';
     }
 

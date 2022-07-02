@@ -1,0 +1,21 @@
+{
+  "collectionName": "components_pfapi_types_richtexts",
+  "info": {
+    "displayName": "richtext",
+    "description": "",
+    "icon": "address-card"
+  },
+  "options": {},
+  "attributes": {
+    "name": {
+      "type": "richtext",
+      "required": true
+    },
+    "value": {
+      "type": "richtext"
+    },
+    "comment": {
+      "type": "string"
+    }
+  }
+}

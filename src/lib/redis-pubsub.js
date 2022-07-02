@@ -1,26 +1,28 @@
 'use strict';
 
 const { v4: uuidv4 } = require('uuid');
-const get_class_config = require('../utils/get-class-config');
+const default_configs = require('../app/default-configs');
+const get_config = require('../app/get-config');
 
 /**
  * redis pub sub with mechanism to exclude message from self
  */
 class RedisPubsub {
 
-    constructor(redis_cache, config = {}, uuid = uuidv4()) {
+    constructor(redis_cache) {
         if (!redis_cache) {
             throw new Error('missing required redis_cache');
         }
         this.redis_cache = redis_cache;
-        Object.assign(this, get_class_config(this, config));
-        this.uuid = uuid;
+        this.config = default_configs['RedisPubsub'];
+        this.uuid = uuidv4();
     }
 
     async start() {
-        this.pubsub_client = await this.on_pubsub(this.channel_name, async (event) => {
+        this.config = get_config('RedisPubsub') || this.config;
+        this.pubsub_client = await this.on_pubsub(this.config.channel_name, async (event) => {
             const json = JSON.parse(event);
-            if (this.exclude_self && json.from === this.uuid) return;
+            if (this.config.exclude_self && json.from === this.uuid) return;
             await this.on_receive(json.message, json.from);
         });
     }
@@ -28,7 +30,7 @@ class RedisPubsub {
     async publish(message) {
         const event = {from: this.uuid, message};
         const client = await this.redis_cache.get_client();
-        return await client.publish(this.channel_name, JSON.stringify(event));
+        return await client.publish(this.config.channel_name, JSON.stringify(event));
     }
 
     async on_receive(message, from) {
@@ -37,7 +39,7 @@ class RedisPubsub {
 
     async stop() {
         if (!this.pubsub_client) return;
-        await this.turnoff_pubsub(this.pubsub_client, this.channel_name);
+        await this.turnoff_pubsub(this.pubsub_client, this.config.channel_name);
         await this.redis_cache.close(this.pubsub_client);
         this.pubsub = null;
     }

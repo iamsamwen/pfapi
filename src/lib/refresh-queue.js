@@ -1,18 +1,20 @@
 'use strict';
 
+const default_configs = require('../app/default-configs');
 const Cacheable = require('../lib/cacheable');
-const get_class_config = require('../utils/get-class-config');
+const get_config = require('../app/get-config');
 const get_priority_score = require('../utils/get-priority-score');
 
 class RefreshQueue {
 
-    constructor(redis_cache, local_cache, config = {}) {
+    constructor(redis_cache, local_cache, config) {
         if (!redis_cache) {
             throw new Error('missing required redis_cache');
         }
         this.redis_cache = redis_cache;
         this.local_cache = local_cache;
-        this.config = get_class_config(this, config);
+        this.config = default_configs['RefreshQueue'];
+        if (config) Object.assign(this.config, config);
     }
 
     async push(keys) {
@@ -35,6 +37,7 @@ class RefreshQueue {
     }
 
     start() {
+        this.config = get_config('RefreshQueue') || this.config;
         this.interval_handle = setInterval(async () => {
             if (this.stopped) return;
             const queue_size = await this.get_refresh_queue_size();

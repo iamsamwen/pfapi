@@ -1,0 +1,27 @@
+{
+  "collectionName": "components_pfapi_types_medias",
+  "info": {
+    "displayName": "medias",
+    "icon": "air-freshener"
+  },
+  "options": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "value": {
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ],
+      "type": "media",
+      "multiple": true
+    },
+    "comment": {
+      "type": "string"
+    }
+  }
+}

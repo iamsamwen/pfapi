@@ -1,6 +1,5 @@
 'use strict';
 
-const default_configs = require('../app/default-configs');
 const Cacheable = require('../lib/cacheable');
 const get_config = require('../app/get-config');
 const get_priority_score = require('../utils/get-priority-score');
@@ -13,7 +12,7 @@ class RefreshQueue {
         }
         this.redis_cache = redis_cache;
         this.local_cache = local_cache;
-        this.config = default_configs['RefreshQueue'];
+        this.config = get_config('RefreshQueue');
         if (config) Object.assign(this.config, config);
     }
 
@@ -37,7 +36,6 @@ class RefreshQueue {
     }
 
     start() {
-        this.config = get_config('RefreshQueue') || this.config;
         this.interval_handle = setInterval(async () => {
             if (this.stopped) return;
             const queue_size = await this.get_refresh_queue_size();

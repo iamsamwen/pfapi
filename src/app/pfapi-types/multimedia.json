@@ -1,8 +1,9 @@
 {
-  "collectionName": "components_pfapi_types_medias",
+  "collectionName": "components_pfapi_types_multimedia",
   "info": {
-    "displayName": "medias",
-    "icon": "air-freshener"
+    "displayName": "multimedia",
+    "icon": "angle-right",
+    "description": ""
   },
   "options": {},
   "attributes": {
@@ -10,7 +11,7 @@
       "type": "string",
       "required": true
     },
-    "value": {
+    "media": {
       "allowedTypes": [
         "images",
         "files",
@@ -19,9 +20,6 @@
       ],
       "type": "media",
       "multiple": true
-    },
-    "comment": {
-      "type": "string"
     }
   }
 }

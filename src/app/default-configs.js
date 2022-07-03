@@ -85,26 +85,13 @@ module.exports = {
 
     },
 
-    PfapiApp: {
+    AppBase: {
 
         maintenance_interval: 10000,
         
         config_sync_interval: 3600000,
     
         proxy: true
-    },
-
-    RateLimit: [
-        {ip_mask: '255.255.255.255', prefix: '', window_secs: 10, max_count: 1000, block_secs: 3600, comment: 'average 100 calls per seconds, 1000 calls within 10 seconds'},
-        {ip_mask: '255.255.255.255', prefix: '', window_secs: 300, max_count: 10000, block_secs: 3600, comment: 'average 33 calls per seconds  10000 calls with 5 minutes'}
-    ],
-
-    Ip: [
-        {ip: '127.0.0.1', status: 'white-list', comment: 'call from localhost'}
-    ],
-
-    DemoRole: {name: 'PfapiDemo', description: 'Pfapi demo role', type: 'pfapidemo'},
-
-    DemoKey: {key: 'Pfapi-Demo', blocked: false, comment: 'demo and test key', role: 'PfapiDemo' },
+    }
 
 };

@@ -2,7 +2,7 @@
   "collectionName": "components_pfapi_types_texts",
   "info": {
     "displayName": "text",
-    "icon": "align-justify",
+    "icon": "angle-right",
     "description": ""
   },
   "options": {},
@@ -12,7 +12,7 @@
       "required": true
     },
     "value": {
-      "type": "text"
+      "type": "string"
     }
   }
 }

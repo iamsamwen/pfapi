@@ -1,6 +1,6 @@
 'use strict';
 
-const default_configs = require('../app/default-configs');
+const get_config = require('../app/get-config');
 
 /**
  * 
@@ -11,7 +11,7 @@ const default_configs = require('../app/default-configs');
 class LocalCache {
 
     constructor(config) {
-        this.config = default_configs['LocalCache'];
+        this.config = get_config('LocalCache');
         if (config) Object.assign(this.config, config);
         this.cache_data = new Map();
         this.maintenance();

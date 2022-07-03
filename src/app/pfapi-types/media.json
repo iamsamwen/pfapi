@@ -2,7 +2,7 @@
   "collectionName": "components_pfapi_types_media",
   "info": {
     "displayName": "media",
-    "icon": "address-book",
+    "icon": "angle-right",
     "description": ""
   },
   "options": {},
@@ -11,7 +11,7 @@
       "type": "string",
       "required": true
     },
-    "value": {
+    "media": {
       "type": "media",
       "multiple": false,
       "required": false,
@@ -21,9 +21,6 @@
         "videos",
         "audios"
       ]
-    },
-    "comment": {
-      "type": "string"
     }
   }
 }

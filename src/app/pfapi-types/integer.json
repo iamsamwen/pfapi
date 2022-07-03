@@ -2,7 +2,7 @@
   "collectionName": "components_pfapi_types_integers",
   "info": {
     "displayName": "Integer",
-    "icon": "american-sign-language-interpreting",
+    "icon": "angle-right",
     "description": ""
   },
   "options": {},
@@ -13,9 +13,6 @@
     },
     "value": {
       "type": "integer"
-    },
-    "comment": {
-      "type": "string"
     }
   }
 }

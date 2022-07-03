@@ -29,7 +29,7 @@ function get_component_item(name, value) {
     const type = typeof value;
     let __component = 'pfapi-types.text';
     if (value === null) {
-        //
+        return {__component, name, value};
     } else if (type === 'number') {
         if (Number.isInteger(value)) __component = 'pfapi-types.integer';
         else __component = 'pfapi-types.decimal';
@@ -38,6 +38,21 @@ function get_component_item(name, value) {
     } else if (type === 'object') {
         if (value.mime && value.url) {
             __component = 'pfapi-types.media';
+            return {__component, name, media: value}
+        } else if (Array.isArray(value)) {
+            let is_multimedia = true; 
+            for (const item of value) {
+                if (!item.mime || !item.url) {
+                    is_multimedia = false;
+                    break;
+                }
+            }
+            if (is_multimedia) {
+                __component = 'pfapi-types.multimedia';
+                return {__component, name, media: value}
+            } else {
+                __component = 'pfapi-types.json';
+            }
         } else {
             __component = 'pfapi-types.json';
         }

@@ -63,8 +63,8 @@ class Servers extends RedisPubsub {
                 // state_uid is for internal use, not suppose to change through admin
                 if (uid === uids_config.state_uid) return;
                 this.app.update_config(uid, data);
-                // dependency only happens to config_uid and handle_uid, 
-                if (uids_config.config_uid === uid || uids_config.handle_uid === uid) {
+                // dependency only happens to handle_uid, 
+                if (uids_config.handle_uid === uid) {
                     await this.evict_dependent(uid, data.key || data.handle);
                 }
             } else if (data.id) {
@@ -84,8 +84,8 @@ class Servers extends RedisPubsub {
                 // state_uid is for internal use, not suppose to change through admin
                 if (uid === uids_config.state_uid) return;
                 this.app.del_config(uid, data);
-                // dependency only happens to config_uid and handle_uid, 
-                if (uids_config.config_uid === uid || uids_config.handle_uid === uid) {
+                // dependency only happens to handle_uid, 
+                if (uids_config.handle_uid === uid) {
                     await this.evict_dependent(uid, data.key || data.handle);
                 }
             } else {

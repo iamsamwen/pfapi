@@ -2,7 +2,7 @@
   "collectionName": "components_pfapi_types_decimals",
   "info": {
     "displayName": "Decimal",
-    "icon": "adjust",
+    "icon": "angle-right",
     "description": ""
   },
   "options": {},
@@ -13,9 +13,6 @@
     },
     "value": {
       "type": "decimal"
-    },
-    "comment": {
-      "type": "string"
     }
   }
 }

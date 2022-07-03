@@ -16,9 +16,10 @@ module.exports = ({data, ...rest}) => {
     if (rest.attributes && Array.isArray(rest.attributes)) {
         const items = rest.attributes;
         rest.attributes = {};
-        for (const {name, value} of items) {
+        for (const {name, value, media} of items) {
             if (!name) continue;
-            rest.attributes[name] = value;
+            if (media) rest.attributes[name] = media;
+            else rest.attributes[name] = value;
         }
     }
     for (const [k, v] of Object.entries(rest)) {

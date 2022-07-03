@@ -1,6 +1,5 @@
 'use strict';
 
-const default_configs = require('../app/default-configs');
 const get_config = require('../app/get-config')
 const get_body = require('../utils/get-body');
 const { get_etag, parse_etag } = require('../utils/etag');
@@ -9,7 +8,7 @@ class HttpResponse {
 
     constructor(request) {
         this.request = request;
-        this.config = default_configs['HttpResponse'];
+        this.config = get_config('HttpResponse');
     }
 
     handle_cacheable_request(ctx, cacheable) {

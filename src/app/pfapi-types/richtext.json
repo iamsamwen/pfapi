@@ -2,20 +2,17 @@
   "collectionName": "components_pfapi_types_richtexts",
   "info": {
     "displayName": "richtext",
-    "description": "",
-    "icon": "address-card"
+    "icon": "angle-right",
+    "description": ""
   },
   "options": {},
   "attributes": {
     "name": {
-      "type": "richtext",
+      "type": "string",
       "required": true
     },
     "value": {
       "type": "richtext"
-    },
-    "comment": {
-      "type": "string"
     }
   }
 }

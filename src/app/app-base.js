@@ -7,11 +7,11 @@ const get_checksum = require('../utils/get-checksum');
 const get_dependency_key = require('../utils/get-dependency-key');
 const get_params = require('../utils/get-params');
 const normalize_config = require('./normalize-config');
-const fetch_config = require('./fetch-config');
 const uids_config = require('./uids-config');
 const default_configs = require('./default-configs');
 const cache_request = require('./cache-request');
 
+const HttpResponse = require('../lib/http-response');
 const LocalCache = require('../lib/local-cache');
 const RedisCache = require('../lib/redis-cache');
 const HttpRequest = require('../lib/http-request');
@@ -23,12 +23,19 @@ const Servers = require('./servers');
 
 class AppBase extends HttpRequest {
     
-    constructor(strapi, config) {
+    constructor(strapi) {
         super();
 
         this.strapi = strapi;
-        this.config = config;
         global.PfapiApp = this;
+        this.config = this.get_app_config('AppBase');
+    }
+
+    get_app_config(name) {
+        const config = this.strapi.plugin('pfapi').config(name);
+        //console.log(name, config);
+        if (config) return config;
+        return default_configs[name];
     }
 
     get_white_ip_list() {
@@ -55,7 +62,7 @@ class AppBase extends HttpRequest {
     }
 
     get_config_key(uid, data) {
-        if (uid === uids_config.config_uid || uid === uids_config.keys_uid) {
+        if (uid === uids_config.keys_uid) {
             if (!data || !data.key) throw new Error(`missing key for ${uid}`);
             return get_dependency_key({uid, id: data.key})
         } else if (uid === uids_config.handle_uid) {
@@ -70,45 +77,19 @@ class AppBase extends HttpRequest {
 
     get_config(uid, data) {
         const config_key = this.get_config_key(uid, data);
-        const result = this.local_cache.get(config_key);
-        if (result) return result; 
-        if (uid !== uids_config.config_uid && !data.key) {
-            return null;
-        }
-        return default_configs[data.key];
+        return this.local_cache.get(config_key);
     }
 
     get_key_and_config(uid, data) {
         const config_key = this.get_config_key(uid, data);
         const result = this.local_cache.get(config_key);
-        if (result) return [config_key, result]; 
-        if (uid !== uids_config.config_uid && !data.key) {
-            return [config_key, null];
-        }
-        return [config_key, default_configs[data.key]];
+        return [config_key, result]; 
     }
 
     del_config(uid, data) {
-        if ([uids_config.config_uid, uids_config.keys_uid, uids_config.handle_uid].includes(uid)) {
+        if ([uids_config.keys_uid, uids_config.handle_uid].includes(uid)) {
             const config_key = this.get_config_key(uid, data);
             this.local_cache.delete(config_key);
-            if (uid === uids_config.config_uid) {
-                if (data.key === 'PfapiApp') {
-                    const default_data = default_configs[data.key];
-                    this.strapi.app.proxy = !!default_data.proxy;
-                    this.config.config_sync_interval = default_data.config_sync_interval;
-                } else if (data.key === 'LocalCache') {
-                    this.local_cache.config = default_configs[data.key];
-                } else if (data.key === 'RedisPubsub') {
-                    this.servers.config = default_configs[data.key];
-                } else if (data.key === 'RefreshQueue') {
-                    if (this.refresh_queue) {
-                        this.refresh_queue.config = default_configs[data.key];
-                    }
-                } else if (data.key === 'HttpResponse') {
-                    this.http_response.config = default_configs[data.key];
-                }
-            }
         } else if (uid === uids_config.ips_uid) {
             this.pfapi_uids.load_ips();
         } else if (uid === uids_config.permissions_uid) {
@@ -119,10 +100,10 @@ class AppBase extends HttpRequest {
     }
 
     update_config(uid, data) {
-        if ([uids_config.config_uid, uids_config.keys_uid, uids_config.handle_uid].includes(uid)) {
+        if ([uids_config.keys_uid, uids_config.handle_uid].includes(uid)) {
             const config_key = this.get_config_key(uid, data);
             let changed = false;
-            if (uid === uids_config.config_uid || uid === uids_config.handle_uid) {
+            if (uid === uids_config.handle_uid) {
                 data = normalize_config(data);
                 const old_data = this.local_cache.get(config_key);
                 if (!fp.isEqual(data, old_data)) {
@@ -134,22 +115,6 @@ class AppBase extends HttpRequest {
                 if (old_role !== data.role.name) {
                     changed = true;
                     this.local_cache.put(config_key, data.role.name, true);
-                }
-            }
-            if (changed && uid === uids_config.config_uid) {
-                if (data.key === 'PfapiApp') {
-                    this.strapi.app.proxy = !!data.proxy;
-                    this.config.config_sync_interval = data.config_sync_interval;
-                } else if (data.key === 'LocalCache') {
-                    Object.assign(this.local_cache.config, data);
-                } else if (data.key === 'RedisPubsub') {
-                    Object.assign(this.servers.config, data);
-                } else if (data.key === 'RefreshQueue') {
-                    if (this.refresh_queue) {
-                        Object.assign(this.refresh_queue.config, data);
-                    }
-                } else if (data.key === 'HttpResponse') {
-                    Object.assign(this.http_response.config, data);
                 }
             }
         } else if (uid === uids_config.ips_uid) {
@@ -240,9 +205,9 @@ class AppBase extends HttpRequest {
 
     async start() {
 
-        this.config = await fetch_config(this.strapi, 'PfapiApp') || this.config;
-    
-        this.local_cache = new LocalCache(await fetch_config(this.strapi, 'LocalCache'));
+        this.http_response = new HttpResponse(this);
+
+        this.local_cache = new LocalCache();
 
         this.redis_cache = new RedisCache(process.env.REDIS_URI);
 

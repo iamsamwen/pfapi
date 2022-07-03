@@ -1,7 +1,6 @@
 'use strict';
 
 const { v4: uuidv4 } = require('uuid');
-const default_configs = require('../app/default-configs');
 const get_config = require('../app/get-config');
 
 /**
@@ -14,12 +13,11 @@ class RedisPubsub {
             throw new Error('missing required redis_cache');
         }
         this.redis_cache = redis_cache;
-        this.config = default_configs['RedisPubsub'];
+        this.config = get_config('RedisPubsub');
         this.uuid = uuidv4();
     }
 
     async start() {
-        this.config = get_config('RedisPubsub') || this.config;
         this.pubsub_client = await this.on_pubsub(this.config.channel_name, async (event) => {
             const json = JSON.parse(event);
             if (this.config.exclude_self && json.from === this.uuid) return;

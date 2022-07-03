@@ -3,15 +3,9 @@
 const Refreshable = require('./refreshable');
 const Cacheable = require('./cacheable');
 const Composite = require('./composite');
-const HttpResponse = require('./http-response');
 const get_params = require('../utils/get-params');
-const uids_config = require('../app/uids-config');
 
 class HttpRequest {
-
-    constructor() {
-        this.http_response = new HttpResponse(this);
-    }
 
     get_params(ctx) {
         return get_params(ctx);

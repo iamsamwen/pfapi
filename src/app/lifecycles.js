@@ -25,7 +25,9 @@ module.exports = (app, uid) => {
             app.after_delete(event);
         },
     };
-
+    if (uid === uids_config.files_uid) {
+        delete result.afterCreate;
+    }
     if (uid === uids_config.handle_uid) {
         result.beforeFindOne = (event) => {
             if (process.env.DEBUG_LIFECYCLES) {

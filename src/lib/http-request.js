@@ -1,5 +1,7 @@
 'use strict';
 
+const fp = require('lodash/fp');
+
 const Refreshable = require('./refreshable');
 const Cacheable = require('./cacheable');
 const Composite = require('./composite');
@@ -125,23 +127,26 @@ class HttpRequest {
     async handle_composite_request(ctx, params, composite)  {
     
         const data = {};
+
+        const result = { data, params : [] };
     
-        if  (params.handle && this.get_config) {
-            const config = ctx.state.pfapi.config;
-            if (config && config.attributes) {
+        const config = params.handle && this.get_handle_config ? this.get_handle_config(params.handle) : null;
+
+        if (config) {
+            if (config.attributes) {
                 Object.assign(data, config.attributes);
             }
+            // this forces the composite key change if config checksum changed
+            result.params.push(config.checksum);
+            result.modified_time = config.modified_time;
+            result.timestamp = config.timestamp;
         }
-    
-        const now_ms = Date.now();
-    
-        const result = { params: [], data, timestamp: now_ms, modified_time: now_ms, ttl: 1800000 };
-    
+
         const promises = [];
     
         for (const [key, value] of Object.entries(composite)) {
             if (value instanceof Refreshable) {
-                promises.push(this.run_refreshable(key, params, value, result));
+                promises.push(this.run_refreshable(key, fp.cloneDeep(params), value, result));
             } else if (data[key] === undefined) {
                 data[key] = value;
             }
@@ -179,9 +184,11 @@ class HttpRequest {
             } else {
                 if (await cacheable.get(this.local_cache, this.redis_cache)) {
                     const { timestamp, modified_time, ttl } = cacheable.plain_object;
-                    if (timestamp < result.timestamp) result.timestamp = timestamp;
-                    if (modified_time < result.modified_time) result.modified_time = modified_time;
-                    if (ttl < result.ttl) result.ttl = ttl;
+                    if (!result.timestamp) result.timestamp = timestamp;
+                    else if (result.timestamp < timestamp) result.timestamp = timestamp;
+                    if (!result.modified_time) result.modified_time = modified_time;
+                    else if (result.modified_time < modified_time) result.modified_time = modified_time;
+                    if (result.ttl > ttl) result.ttl = ttl;
                 } else {
                     result.data[key] = {message: 'Not Found'};
                     return;

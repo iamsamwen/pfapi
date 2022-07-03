@@ -228,7 +228,7 @@ class RedisCache extends RedisBase {
                 const [ key, value ] = Object.entries(item)[0];
                 let matched = true;
                 for (const key in query) {
-                    matched = String(vale[key]) === query[key];
+                    matched = String(value[key]) === query[key];
                     if (!matched) break;
                 }
                 if (matched) result.push({[key]: value})

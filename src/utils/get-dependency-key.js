@@ -16,5 +16,7 @@ module.exports = ({uid, id}) => {
     if (!uid) {
         throw new Error(`generate dependency key without uid`);
     }
-    return get_checksum({uid, id: String(id)});
+    if (id === undefined) id = '';
+    else id = String(id);
+    return get_checksum({uid, id});
 };

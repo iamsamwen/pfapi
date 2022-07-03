@@ -12,4 +12,5 @@ module.exports = {
     
     permissions_uid: 'plugin::users-permissions.permission',
     roles_uid: 'plugin::users-permissions.role',
+    files_uid: 'plugin::upload.file',
 }

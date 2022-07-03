@@ -13,8 +13,8 @@ class RedisPubsub {
             throw new Error('missing required redis_cache');
         }
         this.redis_cache = redis_cache;
-        this.config = get_config('RedisPubsub');
         this.uuid = uuidv4();
+        this.config = get_config('RedisPubsub');
     }
 
     async start() {

@@ -271,14 +271,14 @@ class Servers extends RedisPubsub {
     }
 
     save_lifecycle_uid(uid) {
-        this.strapi.entityService.findOne(this.app.state_uid).then(result => {
+        this.strapi.entityService.findOne(uids_config.state_uid).then(result => {
             //console.log(result);
             if (!result) return;
             const id = result.id;
             const lifecycle_uids = result.lifecycle_uids || [];
             if (lifecycle_uids.includes(uid)) return;
             lifecycle_uids.push(uid);
-            this.strapi.entityService.update(this.app.state_uid, {filters: {id}, data: {lifecycle_uids}});
+            this.strapi.entityService.update(uids_config.state_uid, {filters: {id}, data: {lifecycle_uids}});
         })
     }
 }

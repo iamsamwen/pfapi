@@ -260,7 +260,7 @@ class Servers extends RedisPubsub {
         if (this.subscribed_uids.includes(uid)) return;
         if (this.is_primary()) {
             // save the new the uid for other servers and restart 
-            save_lifecycle_uid(uid);
+            this.save_lifecycle_uid(uid);
         }
         this.subscribed_uids.push(uid);
         if (publish) this.publish({uid, action: 'subscribe-db-event'});

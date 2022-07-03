@@ -12,7 +12,7 @@
       "required": true
     },
     "value": {
-      "type": "string"
+      "type": "text"
     }
   }
 }

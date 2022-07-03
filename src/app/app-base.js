@@ -185,6 +185,10 @@ class AppBase extends HttpRequest {
         }
     }
 
+    is_throttled(ctx) {
+        return this.throttle.is_throttled(ctx);
+    }
+
     async start() {
 
         this.http_response = new HttpResponse(this);

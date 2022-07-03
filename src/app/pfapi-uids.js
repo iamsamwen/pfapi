@@ -186,7 +186,7 @@ class PfapiUids {
         }
 
         const items = await this.strapi.entityService.findMany(uids_config.handle_uid, {populate: '*'});
-        console.log(util.inspect(items, false, null, true));
+        //console.log(util.inspect(items, false, null, true));
         if (items.length > 0) {
             for (const item of items) this.app.update_config(uids_config.handle_uid, item);
         }

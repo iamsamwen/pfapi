@@ -35,13 +35,13 @@ class AppBase extends HttpRequest {
     }
 
     get_white_ip_list() {
-        const { white_list } = this.get_config(uids_config.ips_uid) || []
-        return white_list;
+        const lists = this.get_config(uids_config.ips_uid) || {}
+        return lists.white_list;
     }
 
     get_black_ip_list() {
-        const { black_list } = this.get_config(uids_config.ips_uid) || []
-        return black_list;
+        const lists = this.get_config(uids_config.ips_uid) || {}
+        return lists.black_list;
     }
 
     get_api_key_role(params) {

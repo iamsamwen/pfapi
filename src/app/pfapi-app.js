@@ -11,7 +11,7 @@ class PfapiApp extends AppBase {
 
     is_white_listed(ctx) {
         const list = this.get_white_ip_list();
-        if (list.length > 0) {
+        if (list && list.length > 0) {
             return is_ip_matched(ctx, list);
         }
         return false;
@@ -19,7 +19,7 @@ class PfapiApp extends AppBase {
 
     is_blocked(ctx) {
         const list = this.get_black_ip_list();
-        if (list.length > 0) {
+        if (list && list.length > 0) {
             return is_ip_matched(ctx, list);
         }
         return false;
@@ -27,11 +27,8 @@ class PfapiApp extends AppBase {
 
     is_auth(ctx, params) {
         const roles = this.get_permission_roles(params);
-        //console.log('roles', roles);
-        if (!roles) return false;
-        
+        if (!roles) return false; 
         const role = this.get_api_key_role(params);
-        //console.log('role', role);
         return roles.includes(role);
     }
 

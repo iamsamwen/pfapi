@@ -136,7 +136,7 @@ class RedisCache extends RedisBase {
 
     update_dependencies(client, cacheable, data_ttl) {
         const handle = setTimeout(async () => {
-            logging.debug(`update_dependencies ${cacheable.dependent_keys.length}`);
+            logging.debug(`update_dependencies ${cacheable.dependent_keys?.length}`);
             for (const key of cacheable.dependent_keys) {
                 const dep_key = get_redis_key('DEP', key);
                 const multi = client.multi();
@@ -144,7 +144,7 @@ class RedisCache extends RedisBase {
                 multi.pexpire(dep_key, data_ttl);
                 const result = await multi.exec();
                 if (result.length !== 2 || result[1][1] !== 1) {
-                    logging.error(`update_dependencies, failed for ${key} ${JSON.stringify(result)}`);
+                    logging.error(`update_dependencies, failed for ${key}`, result);
                 }
             }
             clearTimeout(handle);

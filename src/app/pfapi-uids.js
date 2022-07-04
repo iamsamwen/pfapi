@@ -1,6 +1,5 @@
 'use strict';
 
-const util = require('util');
 const get_checksum = require('../utils/get-checksum');
 const uids_config = require('./uids-config');
 const logging = require('./logging');
@@ -147,7 +146,7 @@ class PfapiUids {
         const config_key = this.app.get_config_key(uids_config.permissions_uid);
         this.local_cache.put(config_key, permissions, true);
 
-        logging.debug(util.inspect({ config_key, permissions }, false, null, true));
+        logging.debug({ config_key, permissions });
      }
 
     async load_rate_limits() {

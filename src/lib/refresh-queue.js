@@ -65,7 +65,7 @@ class RefreshQueue {
         try {
             const cacheable = new Cacheable({key});
             const result = await cacheable.fetch_data(this.redis_cache, this.local_cache);
-            logging.debug(`refreshed ${key} ${cacheable.module_path} ${JSON.stringify(cacheable.params)}`);
+            logging.debug('refreshed', key, cacheable.module_path, cacheable.params);
             return result;
         } catch(err) {
             logging.error(err);

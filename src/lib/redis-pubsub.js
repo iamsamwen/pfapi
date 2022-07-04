@@ -58,7 +58,7 @@ class RedisPubsub {
                 const id = await this.redis_cache.get_client_id(new_client);
                 new_client.on('message', async (channel, data) => {
                     const current_id = await this.redis_cache.get_client_id(new_client);
-                    logging.debug(`on_pubsub current_id: ${current_id} id: ${id}`);
+                    //logging.debug('on_pubsub receive message', {current_id, id, data});
                     if (current_id !== id) {
                         await new_client.unsubscribe(channel);
                         return;

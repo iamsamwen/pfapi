@@ -1,7 +1,5 @@
 'use strict';
 
-//const util = require('util');
-
 const RedisPubsub = require('../lib/redis-pubsub');
 const Cacheable = require('../lib/cacheable');
 const RefreshQueue = require('../lib/refresh-queue');
@@ -31,7 +29,7 @@ class Servers extends RedisPubsub {
     }
     
     async on_receive(message, from) {
-        logging.debug(`on_receive from ${from}: ${JSON.stringify(message)}`)
+        logging.debug('on_receive', {from, message})
         switch(message.action) {
             case 'keep-alive':
                 this.update_instances(message, from);
@@ -146,7 +144,7 @@ class Servers extends RedisPubsub {
                 await this.evict_dependent(uid, data.id);
             }
         } else {
-            logging.error(`unknown on_db_upsert message: ${JSON.stringify(message)}`);
+            logging.error('unknown on_db_upsert message', message);
         }
     }
 
@@ -166,7 +164,7 @@ class Servers extends RedisPubsub {
                 await this.evict_dependent(uid, data.id);
             }
         } else {
-            logging.error(`unknown on_db_delete message: ${JSON.stringify(message)}`);
+            logging.error('unknown on_db_delete message', message);
         }
     }
 

@@ -2,6 +2,7 @@
 
 const fs = require('fs-extra');
 const node_path =require('path');
+const logging = require('./logging');
 
 module.exports = (strapi) => {
 
@@ -12,6 +13,6 @@ module.exports = (strapi) => {
     const pfapi_types_path = node_path.join(components_path, 'pfapi-types');
     if (!fs.existsSync(pfapi_types_path)) {
         fs.copySync(node_path.join(__dirname, 'pfapi-types'), pfapi_types_path);
-        console.log('install components pfapi-types done!');
+        logging.info('installed pfapi-types components');
     }
 }

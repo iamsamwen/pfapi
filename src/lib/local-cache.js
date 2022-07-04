@@ -1,6 +1,7 @@
 'use strict';
 
 const get_config = require('../app/get-config');
+const logging = require('../app/logging');
 
 /**
  * 
@@ -141,9 +142,9 @@ class LocalCache {
                 }
             }
             if (this.cache_data.size >= this.config.max_size) {
-                console.error('local cache size reached max_size (${this.config.max_size})');
+                logging.error(`local cache size reached max_size (${this.config.max_size})`);
             } else if (this.cache_data.size > this.config.max_size * 0.8) {
-                console.warn('local cache size reached 80 percent of max_size (${this.config.max_size})');
+                logging.warn(`local cache size reached 80 percent of max_size (${this.config.max_size})`);
             }
         }, this.config.timer_interval);
     }

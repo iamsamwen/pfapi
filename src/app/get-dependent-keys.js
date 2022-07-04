@@ -1,6 +1,7 @@
 'use strict';
 
 const get_dependency_key = require('../utils/get-dependency-key');
+const logging = require('./logging');
 
 module.exports = (dependencies) => {
     const dependent_keys = [];
@@ -18,11 +19,11 @@ module.exports = (dependencies) => {
                 global.PfapiApp.subscribe_lifecycle_events(uid);
             }
         } else {
-            console.error('global.PfapiApp not ready');
+            logging.error('global.PfapiApp not ready');
         }
         return dependent_keys;
     } catch(err) {
-        console.error(err.message);
+        logging.error(err.message);
     }
     return null;
 }

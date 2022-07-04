@@ -1,8 +1,5 @@
 'use strict';
 
-const util = require('util');
-const fp = require('lodash/fp');
-
 const get_checksum = require('../utils/get-checksum');
 const get_dependency_key = require('../utils/get-dependency-key');
 const get_params = require('../utils/get-params');

@@ -4,6 +4,7 @@ const { update_info } = require('./info-keys');
 const get_value = require('../utils/get-value');
 const { get_redis_key, get_prefix_key } = require('../utils/redis-keys');
 const RedisBase = require('./redis-base');
+const logging = require('../app/logging');
 
 class RedisCache extends RedisBase {
     
@@ -135,9 +136,7 @@ class RedisCache extends RedisBase {
 
     update_dependencies(client, cacheable, data_ttl) {
         const handle = setTimeout(async () => {
-            if (process.env.DEBUG_DEPENDENTS) {
-                console.log('update_dependencies', cacheable.dependent_keys.length);
-            }
+            logging.debug(`update_dependencies ${cacheable.dependent_keys.length}`);
             for (const key of cacheable.dependent_keys) {
                 const dep_key = get_redis_key('DEP', key);
                 const multi = client.multi();
@@ -145,7 +144,7 @@ class RedisCache extends RedisBase {
                 multi.pexpire(dep_key, data_ttl);
                 const result = await multi.exec();
                 if (result.length !== 2 || result[1][1] !== 1) {
-                    console.error('update_dependencies, failed for', key, result);
+                    logging.error(`update_dependencies, failed for ${key} ${JSON.stringify(result)}`);
                 }
             }
             clearTimeout(handle);

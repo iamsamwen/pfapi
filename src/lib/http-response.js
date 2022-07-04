@@ -145,7 +145,6 @@ class HttpResponse {
                     continue;
                 }
                 if (etag_info.key === key && etag_info.checksum === checksum) {
-                    //console.log('by if-none-match');
                     ctx.status = 304;
                     return true;
                 }
@@ -155,7 +154,6 @@ class HttpResponse {
         if (header['if-modified-since']) {
             const if_modified_since = Date.parse(header['if-modified-since']);
             if (modified_time <= if_modified_since) {
-                //console.log('by if-modified-since');
                 ctx.status = 304;
                 return true;
             }

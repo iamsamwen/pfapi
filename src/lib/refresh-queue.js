@@ -3,6 +3,7 @@
 const Cacheable = require('../lib/cacheable');
 const get_config = require('../app/get-config');
 const get_priority_score = require('../utils/get-priority-score');
+const logging = require('../app/logging');
 
 class RefreshQueue {
 
@@ -39,7 +40,7 @@ class RefreshQueue {
         this.interval_handle = setInterval(async () => {
             if (this.stopped) return;
             const queue_size = await this.get_refresh_queue_size();
-            //console.log('refresh priority queue size', queue_size);
+            logging.debug(`refresh queue size: ${queue_size}`);
             if (queue_size > 0) {
                 const start_ms = Date.now();
                 // process from top
@@ -54,6 +55,7 @@ class RefreshQueue {
                 const remove_count = Math.round(queue_size * this.config.remove_ratio);
                 if (remove_count > 0) {
                     await this.shift_refresh_queue(remove_count);
+                    logging.debug(`refresh queue removed ${remove_count} keys`);
                 }
             }
         }, this.config.refresh_interval);
@@ -62,9 +64,11 @@ class RefreshQueue {
     async on_refresh(key) {
         try {
             const cacheable = new Cacheable({key});
-            return await cacheable.fetch_data(this.redis_cache, this.local_cache);
+            const result = await cacheable.fetch_data(this.redis_cache, this.local_cache);
+            logging.debug(`refreshed ${key} ${cacheable.module_path} ${JSON.stringify(cacheable.params)}`);
+            return result;
         } catch(err) {
-            console.error(err);
+            logging.error(err);
         }
     }
 
@@ -79,6 +83,7 @@ class RefreshQueue {
         if (promises.length > 0) {
             await Promise.all(promises);
         }
+        logging.info(`refresh queue refreshed ${max_refresh_size} keys`);
     }
 
     stop() {

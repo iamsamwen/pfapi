@@ -3,6 +3,7 @@
 const util = require('util');
 const get_checksum = require('../utils/get-checksum');
 const uids_config = require('./uids-config');
+const logging = require('./logging');
 
 class PfapiUids {
     
@@ -43,10 +44,10 @@ class PfapiUids {
             this.app.subscribe_lifecycle_events(uid, false);
         }
 
-        const { lifecycle_uids } = await this.strapi.db.query(uids_config.state_uid).findOne() || {};
- 
-        if (lifecycle_uids && lifecycle_uids.length > 0) {
-            for (const uid of lifecycle_uids) {
+        const [ item ] = await this.strapi.entityService.findMany(uids_config.state_uid, {filters: {key: 'lifecycle_uids'}, limit: 1}) || [];
+
+        if (item && item.value) {
+            for (const uid of item.value) {
                 if (!this.strapi.contentTypes[uid]) continue;
                 this.app.subscribe_lifecycle_events(uid, false);
             }
@@ -56,7 +57,7 @@ class PfapiUids {
     async load_ips() {
 
         if (!this.strapi.contentTypes[uids_config.ips_uid]) {
-            console.error(`${this.ips_uid} not found`);
+            logging.error(`${this.ips_uid} not found`);
             return;
         }
 
@@ -87,7 +88,7 @@ class PfapiUids {
     async load_api_keys() {
 
         if (!this.strapi.contentTypes[uids_config.keys_uid]) {
-            console.error(`${uids_config.keys_uid} not found`);
+            logging.fatal(`${uids_config.keys_uid} not found`);
             return;
         }
 
@@ -125,7 +126,7 @@ class PfapiUids {
     async load_permissions() {
 
         if (!this.strapi.contentTypes[uids_config.permissions_uid]) {
-            console.error(`${uids_config.permissions_uid} not found`);
+            logging.fatal(`${uids_config.permissions_uid} not found`);
             return;
         }
 
@@ -133,7 +134,7 @@ class PfapiUids {
             filters: {$or: [{action: {$endsWith: '.find'}}, {action: {$endsWith: '.findOne'}}]}, 
             populate: '*'
         });
-        //console.log(util.inspect(items, false, null, true));
+
         const permissions = {};
         for (const {action, role: {name}} of items) {
             let roles = permissions[action];
@@ -144,14 +145,15 @@ class PfapiUids {
         }
 
         const config_key = this.app.get_config_key(uids_config.permissions_uid);
-        //console.log({ config_key, permissions});
         this.local_cache.put(config_key, permissions, true);
-    }
+
+        logging.debug(util.inspect({ config_key, permissions }, false, null, true));
+     }
 
     async load_rate_limits() {
 
         if (!this.strapi.contentTypes[uids_config.rate_limits_uid]) {
-            console.error(`${uids_config.rate_limits_uid} not found`);
+            logging.error(`${uids_config.rate_limits_uid} not found`);
             return;
         }
 
@@ -181,12 +183,12 @@ class PfapiUids {
     async load_handles() {
 
         if (!this.strapi.contentTypes[uids_config.handle_uid]) {
-            console.error(`${uids_config.handle_uid} not found`);
+            logging.error(`${uids_config.handle_uid} not found`);
             return;
         }
 
         const items = await this.strapi.entityService.findMany(uids_config.handle_uid, {populate: '*'});
-        //console.log(util.inspect(items, false, null, true));
+
         if (items.length > 0) {
             for (const item of items) this.app.update_config(uids_config.handle_uid, item);
         }

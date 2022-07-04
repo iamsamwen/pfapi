@@ -6,6 +6,7 @@ const Refreshable = require('./refreshable');
 const Cacheable = require('./cacheable');
 const Composite = require('./composite');
 const get_params = require('../utils/get-params');
+const logging = require('../app/logging');
 
 class HttpRequest {
 
@@ -70,11 +71,9 @@ class HttpRequest {
         const end_time = process.hrtime.bigint();
         const ms = (Number(end_time - start_time) / 1000000).toFixed(2);
 
-        ctx.set('X-Response-Time', `${ms} ms`);
+        if (this.config?.send_response_time) ctx.set('X-PFAPI-Response-Time', `${ms} ms`);
 
-        if (process.env.DEBUG) {
-            console.log('cache_key:', cache_key, 'response_time:', ms, 'ms');
-        }
+        logging.info(`key: ${cache_key} ${ms} ms ${ctx.path}`);
     }
 
     async handle_refreshable_request(ctx, params, refreshable) {
@@ -116,7 +115,7 @@ class HttpRequest {
 
             } else {
 
-                console.error(err);
+                logging.error(err);
                 this.http_response.handle_nocache_request(ctx, 500, {message: 'failed'});
             }
         }
@@ -202,7 +201,7 @@ class HttpRequest {
             if (err.message.startsWith('Not Found')) {
                 result.data[key] = {message: err.message};
             } else {
-                console.error(err);
+                logging.error(err);
                 result.data[key] = {message: 'failed'};
             }
         }

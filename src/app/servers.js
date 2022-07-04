@@ -1,6 +1,6 @@
 'use strict';
 
-const util = require('util');
+//const util = require('util');
 
 const RedisPubsub = require('../lib/redis-pubsub');
 const Cacheable = require('../lib/cacheable');
@@ -12,6 +12,7 @@ const get_dependency_key = require('../utils/get-dependency-key');
 const lifecycles = require('./lifecycles');
 const uids_config = require('./uids-config');
 const { delete_attrs_file, replace_attrs_file} = require('./handle-config');
+const logging = require('./logging');
 
 class Servers extends RedisPubsub {
 
@@ -30,7 +31,7 @@ class Servers extends RedisPubsub {
     }
     
     async on_receive(message, from) {
-        if (process.env.DEBUG_PUBSUB) console.log('on_receive:', {message, from});
+        logging.debug(`on_receive from ${from}: ${JSON.stringify(message)}`)
         switch(message.action) {
             case 'keep-alive':
                 this.update_instances(message, from);
@@ -51,7 +52,7 @@ class Servers extends RedisPubsub {
                 await this.on_db_delete(message);
                 break;
             default:
-                console.log(`unknown action ${message.action}`);
+                logging.error(`unknown action ${message.action}`);
         }
     }
 
@@ -85,19 +86,15 @@ class Servers extends RedisPubsub {
     }
 
     async stop() {
-
         if (this.timer_handle) {
             clearInterval(this.timer_handle);
         }
-
         if (this.expires_watch) {
             await this.expires_watch.stop();
         }
-
         if (this.refresh_queue) {
             await this.refresh_queue.stop();
         }
-
         await RedisPubsub.prototype.stop();
     }
 
@@ -112,7 +109,7 @@ class Servers extends RedisPubsub {
         }
         this.expires_watch = new ExpiresWatch(this.redis_cache, this.refresh_queue);
         await this.expires_watch.start();
-        console.log('expires watch/refresh started', this.uuid);
+        logging.info(`expires watch/refresh started - ${this.uuid}`);
     }
 
     async stop_refresh_queue() {
@@ -124,7 +121,7 @@ class Servers extends RedisPubsub {
             await this.refresh_queue.stop();
         }
         this.refresh_queue = null;
-        console.log('expires watch/refresh stopped', this.uuid);
+        logging.info(`expires watch/refresh stopped - ${this.uuid}`);
     }
 
     evict_local_cache({keys}, from) {
@@ -135,8 +132,8 @@ class Servers extends RedisPubsub {
 
     async on_db_upsert(message) {
         const {uid, data} = message;
-        if (process.env.DEBUG_LIFECYCLES) console.log('on_db_upsert', {uid, data});
         if (uid && data) {
+            logging.debug(`on_db_upsert ${uid} ${data.id}`);
             const uids = Object.values(uids_config);
             if (uids.includes(uid)) {
                 this.app.update_config(uid, data);
@@ -149,14 +146,14 @@ class Servers extends RedisPubsub {
                 await this.evict_dependent(uid, data.id);
             }
         } else {
-            console.error('unknown upsert message', JSON.stringify(message));
+            logging.error(`unknown on_db_upsert message: ${JSON.stringify(message)}`);
         }
     }
 
     async on_db_delete(message) {
         const {uid, data} = message;
-        if (process.env.DEBUG_LIFECYCLES) console.log('on_db_delete', {uid, data});
         if (uid && data) {
+            logging.debug(`on_db_delete ${uid} ${data.id}`);
             const uids = Object.values(uids_config);
             if (uids.includes(uid)) {
                 this.app.del_config(uid, data);
@@ -169,7 +166,7 @@ class Servers extends RedisPubsub {
                 await this.evict_dependent(uid, data.id);
             }
         } else {
-            console.error('unknown delete message', JSON.stringify(message));
+            logging.error(`unknown on_db_delete message: ${JSON.stringify(message)}`);
         }
     }
 
@@ -187,8 +184,8 @@ class Servers extends RedisPubsub {
             if (config.checksum !== checksum) {
                 config.modified_time = Date.now();
                 config.timestamp = timestamp;
+                await this.evict_dependent_by_key(config_key);
             }
-            await this.evict_dependent_by_key(config_key);
         }
     }
 
@@ -221,13 +218,13 @@ class Servers extends RedisPubsub {
 
     async evict_dependent(uid, id) {
         const key = get_dependency_key({uid, id});
-        if (process.env.DEBUG_DEPENDENTS) console.log('evict_dependent', key, {uid, id});
+        logging.debug(`evict_dependent ${key} ${uid} ${id}`);
         await this.evict_dependent_by_key(key);
     }
 
     async evict_dependent_by_key(key) {
         const keys = await this.redis_cache.get_dependencies(key);
-        if (process.env.DEBUG_DEPENDENTS) console.log('evict_dependent_by_key', key, keys);
+        logging.debug(`evict_dependent_by_key ${key}: ${keys.join(', ')}`);
         if (keys.length === 0) return;
         for (const key of keys) {
             const cacheable = new Cacheable({key});
@@ -254,7 +251,7 @@ class Servers extends RedisPubsub {
 
     subscribe_lifecycle_events(uid, publish = true) {
         if (!uid) {
-            console.log('failed to subscribe_lifecycle_events, invalid uid', {uid, publish});
+            logging.error('failed to subscribe_lifecycle_events, invalid uid');
             return;
         }
         if (this.subscribed_uids.includes(uid)) return;
@@ -264,16 +261,13 @@ class Servers extends RedisPubsub {
         }
         this.subscribed_uids.push(uid);
         if (publish) this.publish({uid, action: 'subscribe-db-event'});
-        if (process.env.DEBUG_LIFECYCLES) {
-            console.log('subscribe_lifecycle_events', uid);
-        }
-        this.strapi.db.lifecycles.subscribe(lifecycles(this, uid))
+        this.strapi.db.lifecycles.subscribe(lifecycles(this, uid));
+        logging.info(`subscribe_lifecycle_events ${uid}`);
     }
 
     save_lifecycle_uid(uid) {
         this.strapi.entityService.findMany(uids_config.state_uid, {filters: {key: 'lifecycle_uids'}, limit: 1}).then(result => {
-            //console.log(result);
-            if (!result || result.length === 0) {
+            if (result.length === 0) {
                 this.strapi.entityService.create(uids_config.state_uid, {data: {key: 'lifecycle_uids', value: [uid]}});
             } else {
                 const { id, value } = result[0];

@@ -1,5 +1,7 @@
 'use strict';
 
+const logging = require('../app/logging');
+
 module.exports = {
     on_invalidate,
     off_invalidate,
@@ -19,18 +21,18 @@ async function on_invalidate(redis, on_event, {prefix,  bcast = true, noloop = t
             if (noloop) argv.push('noloop');
 
             if (await redis.send_command({client, cmd: 'client', argv}) !== 'OK') {
-                console.error('on_invalidate, failed to send_command');
+                logging.error('on_invalidate, failed to send_command');
                 return;
             }
 
             if (await new_client.subscribe('__redis__:invalidate') !== 1) {
-                console.error('on_invalidate, failed to subscribe');
+                logging.error('on_invalidate, failed to subscribe');
                 return;
             }
 
             new_client.on('message', async (channel, data) => {
                 const current_id = await redis.get_client_id(new_client);
-                //console.log('on_invalidate', {current_id, id, channel, data});
+                logging.debug(`on_invalidate current_id: ${current_id} id: ${id} channel: ${channel} ${JSON.stringify(data)}`);
                 if (current_id !== id) {
                     await off_invalidate_by_id(redis, client, id);
                     return;
@@ -40,7 +42,7 @@ async function on_invalidate(redis, on_event, {prefix,  bcast = true, noloop = t
             });
 
         } catch(err) {
-            console.error(err);
+            logging.error(err);
         }
     });
 }
@@ -58,7 +60,7 @@ async function off_invalidate_by_id(redis, client, id) {
     const argv = ['tracking', 'off', 'redirect', id];
     const result = await redis.send_command({client, cmd: 'client', argv});
     if (result !== 'OK') {
-        console.error('turnoff_invalidate, failed to send_command');
+        logging.error('turnoff_invalidate, failed to send_command');
         return false;
     }
     return true;

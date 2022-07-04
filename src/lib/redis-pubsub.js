@@ -2,6 +2,7 @@
 
 const { v4: uuidv4 } = require('uuid');
 const get_config = require('../app/get-config');
+const logging = require('../app/logging');
 
 /**
  * redis pub sub with mechanism to exclude message from self
@@ -32,7 +33,7 @@ class RedisPubsub {
     }
 
     async on_receive(message, from) {
-        console.log(message, from);
+        //console.log(message, from);
     }
 
     async stop() {
@@ -50,14 +51,14 @@ class RedisPubsub {
             try {
                 const subscribe_result = await new_client.subscribe(channel_name);
                 if (subscribe_result !== 1) {
-                    console.error('on_pubsub, failed to subscribe');
+                    logging.error('on_pubsub, failed to subscribe');
                     await this.close(subscribe_client);
                     return;
                 }
                 const id = await this.redis_cache.get_client_id(new_client);
                 new_client.on('message', async (channel, data) => {
                     const current_id = await this.redis_cache.get_client_id(new_client);
-                    //console.log('on_pubsub', {current_id, id});
+                    logging.debug(`on_pubsub current_id: ${current_id} id: ${id}`);
                     if (current_id !== id) {
                         await new_client.unsubscribe(channel);
                         return;
@@ -65,7 +66,7 @@ class RedisPubsub {
                     await on_event(data);
                 });
             } catch(err) {
-                console.error(err);
+                logging.error(err);
             }
         });
 

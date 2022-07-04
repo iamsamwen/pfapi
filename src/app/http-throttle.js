@@ -10,7 +10,7 @@ class HttpThrottle extends Throttle {
     constructor(app) {
         super(app.redis_cache, app.local_cache);
         this.app = app;
-        const rate_limits = default_configs['RateLimit'];
+        const rate_limits = app.get_app_config('RateLimit');
         if (rate_limits) this.apply_rate_limits(rate_limits);
     }
 

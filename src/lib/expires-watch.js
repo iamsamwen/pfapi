@@ -2,6 +2,7 @@
 
 const { get_prefix_key } = require('../utils/redis-keys');
 const { on_invalidate, off_invalidate } = require('./redis-invalidate');
+const logging = require('../app/logging');
 
 /**
  * watch EXP key delete and expire events from redis
@@ -19,14 +20,13 @@ class ExpiresWatch {
 
     async start() {
         this.expiration_client = await this.on_exp_invalidate(async (redis_keys) => {
-            //console.log(`*** EvictionWatch receives ${redis_keys.length} redis_keys`, redis_keys);
             const keys = [];
             for (const redis_key of redis_keys) {
                 if (!redis_key.startsWith('EXP::')) continue;
                 if (!await this.is_key_expired(redis_key)) continue;
                 const {key} = get_prefix_key(redis_key);
                 if (!key) continue;
-                //console.log('key expired', key)
+                logging.debug(`key expired: ${key}`)
                 keys.push(key);
             }
             if (keys.length > 0) {

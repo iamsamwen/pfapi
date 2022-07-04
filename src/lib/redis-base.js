@@ -1,6 +1,7 @@
 'use strict';
 
 const IORedis = require('ioredis');
+const logging = require('../app/logging');
 
 class RedisBase {
 
@@ -110,17 +111,17 @@ class RedisBase {
             const nodes = client.nodes();
             const master_nodes = nodes.map(x => x && x.options && !x.options.readOnly);
             if (master_nodes.length === 0) {
-                console.error('unexpected, no master node found!');
+                logging.error('unexpected, no master node found!');
                 return false;
             }
             for (const master_node of master_nodes) {
                 if (!await master_node.flushall()) {
-                    console.error('failed, master node flushall');
+                    logging.error('failed, master node flushall');
                 }
             }
         } else {
             if (!await client.flushall()) {
-                console.error('failed, node flushall');
+                logging.error('failed, node flushall');
                 return false;
             }
         }
@@ -181,12 +182,11 @@ class RedisBase {
                 const id = this.clients[index].id;
                 this.clients[index].id = null;
                 client.disconnect(true);
-                console.error(err.message, {index, id});
+                logging.error(`${err.message} index: ${index} id: ${id}}`);
             });
             client.on('connect', async () => {
                 const id = await client.client('id');
                 this.clients[index].id = id;
-                //console.log('on connect', {index, id});
                 if (index > 0 && on_connected) await on_connected(client);
                 resolve();
             })   

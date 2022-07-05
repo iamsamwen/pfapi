@@ -1,6 +1,7 @@
 'use strict';
 
 const IORedis = require('ioredis');
+const debug_verbose = require('debug')('pfapi-verbose:redis-base')
 const logging = require('../app/logging');
 const { parseRedisUrl } = require('parse-redis-url-simple');
 
@@ -17,6 +18,7 @@ class RedisBase {
         } else {
             this.config = uri;
         }
+        debug_verbose(this.config);
         this.clients = [];
     }
 

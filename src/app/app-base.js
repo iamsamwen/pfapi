@@ -214,7 +214,6 @@ class AppBase extends HttpRequest {
 
         if (this.servers) {
             await this.servers.publish({action: 'shutdown'});
-            await this.servers.stop();
         }
 
         if (this.pfapi_uids) {
@@ -229,6 +228,11 @@ class AppBase extends HttpRequest {
         }
 
         this.local_cache.stop();
+
+        if (this.servers) {
+            await this.servers.stop();
+        }
+        
         await this.redis_cache.close();
 
     }

@@ -192,7 +192,7 @@ class AppBase extends HttpRequest {
 
         this.local_cache = new LocalCache();
 
-        this.redis_cache = new RedisCache(process.env.REDIS_URI);
+        this.redis_cache = new RedisCache(this.get_app_config('redis_uri'));
 
         this.strapi.PfapiApp = this;
 
@@ -232,8 +232,10 @@ class AppBase extends HttpRequest {
         if (this.servers) {
             await this.servers.stop();
         }
-        
-        await this.redis_cache.close();
+
+        setTimeout(async () => {
+            await this.redis_cache.close();
+        }, 100);
 
     }
 }

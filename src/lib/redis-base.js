@@ -2,9 +2,14 @@
 
 const IORedis = require('ioredis');
 const logging = require('../app/logging');
+const { parseRedisUrl } = require('parse-redis-url-simple');
 
 class RedisBase {
 
+    /**
+     * 
+     * @param {*} uri for cluster, for example: 'redis://172.31.23.70:6379,172.31.30.210:6379,172.31.22.214:6379/0' 
+     */
     constructor(uri = 'redis://localhost/0') {
         this.config = this.parse_uri(uri);
         this.clients = [];
@@ -129,20 +134,15 @@ class RedisBase {
     }
 
     parse_uri(uri) {
-        let {protocol, host, username, password, port, pathname } = new URL(uri);
-        if (protocol !== 'redis:') {
-            throw new Error(`unexpected protocol ${protocol}`);
-        }
-        if (!port) port = 6379;
-        if (!pathname) pathname = '/0';
-        const db = Number(pathname.split('/').pop());
-        const hosts = host.split(',');
-        if (hosts.length === 1) {
+        const result = parseRedisUrl(uri);
+        if (result.length === 1) {
+            const { host, port, username, password, database: db } = result[0];
             return {host, port, username, password, db};
         } else {
             const config = [];
-            for (const host of hosts) {
-                this.config.push({host, port, username, password, db});
+            for (const item of result) {
+                const { host, port, username, password, database: db } = item;
+                config.push({host, port, username, password, db});
             }
             return config;
         }

@@ -84,7 +84,7 @@ function replace_attrs_file(config, data) {
                 }
             } else if (value.id === data.id) {
                 process_media(data);
-                value[i] = data;
+                config.attributes[key] = data;
             }
         }
     }

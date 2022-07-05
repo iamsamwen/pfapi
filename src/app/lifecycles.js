@@ -26,13 +26,13 @@ module.exports = (app, uid) => {
     if (uid === uids_config.handle_uid) {
         result.beforeFindOne = (event) => {
             debug_verbose(uid, logging.cmsg(event));
-            if (event.params.populate) {
+            if (event.params && event.params.populate) {
                 event.params.populate = { attributes: { populate: { media: true } } };
             }
         }
         result.beforeFindMany = (event) => {
             debug_verbose(uid, logging.cmsg(event));
-            if (event.params.populate) {
+            if (event.params && event.params.populate) {
                 event.params.populate = { attributes: { populate: { media: true } } };
             }
         }

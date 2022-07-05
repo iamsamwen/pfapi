@@ -204,9 +204,9 @@ class AppBase extends HttpRequest {
 
         this.started_at = Date.now();
 
-        this.pfapi_uids.start(this.config.sync_interval || 3600000);
+        await this.pfapi_uids.start(this.config.sync_interval || 3600000);
 
-        this.servers.start(this.started_at, this.config.maintenance_interval || 100000);
+        await this.servers.start(this.started_at, this.config.maintenance_interval || 100000);
 
     }
 

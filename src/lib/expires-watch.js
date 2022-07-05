@@ -1,8 +1,8 @@
 'use strict';
 
+const debug = require('debug')('pfapi:expires-watch');
 const { get_prefix_key } = require('../utils/redis-keys');
 const { on_invalidate, off_invalidate } = require('./redis-invalidate');
-const logging = require('../app/logging');
 
 /**
  * watch EXP key delete and expire events from redis
@@ -26,7 +26,7 @@ class ExpiresWatch {
                 if (!await this.is_key_expired(redis_key)) continue;
                 const {key} = get_prefix_key(redis_key);
                 if (!key) continue;
-                logging.debug(`key expired: ${key}`)
+                debug('key expired', key)
                 keys.push(key);
             }
             if (keys.length > 0) {

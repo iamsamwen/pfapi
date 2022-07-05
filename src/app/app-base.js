@@ -175,8 +175,8 @@ class AppBase extends HttpRequest {
     }
 
     async handle_cache_requests(ctx) {
-        if (!process.env.DEBUG || ctx.ip !== '127.0.0.1') {
-            this.http_response.handle_nocache_request(ctx, 403, {message: 'Forbidden! Only available for local DEBUG'});
+        if (!process.env.DEBUG || ['pfapi:cache', 'pfapi:*', '*'].includes(process.env.DEBUG) || ctx.ip !== '127.0.0.1') {
+            this.http_response.handle_nocache_request(ctx, 403, {message: 'Forbidden! Only available for local cache debug'});
         } else {
             await cache_requests(ctx, this.http_response, this.local_cache, this.redis_cache);
         }
@@ -222,18 +222,16 @@ class AppBase extends HttpRequest {
         if (this.local_invalidate) {
             await this.local_invalidate.stop();
         }
-
         if (this.throttle) {
             await this.throttle.stop();
         }
 
         this.local_cache.stop();
 
-        if (this.servers) {
-            await this.servers.stop();
-        }
-
         setTimeout(async () => {
+            if (this.servers) {
+                await this.servers.stop();
+            }
             await this.redis_cache.close();
         }, 100);
 

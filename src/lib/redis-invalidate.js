@@ -32,7 +32,6 @@ async function on_invalidate(redis, on_event, {prefix,  bcast = true, noloop = t
 
             new_client.on('message', async (channel, data) => {
                 const current_id = await redis.get_client_id(new_client);
-                //logging.debug('on_invalidate receive message', {current_id, id, channel, data});
                 if (current_id !== id) {
                     await off_invalidate_by_id(redis, client, id);
                     return;

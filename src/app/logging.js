@@ -1,26 +1,18 @@
 'use strict';
 
 const util = require('util');
+const debug_tool = require('debug')('pfapi:debug');
 
 module.exports = {
-    fatal,
     error,
     warn,
+    debug,
     info,
-    debug
-}
-
-function fatal(...args) {
-    const message = get_message(args);
-    if (global.strapi) {
-        global.strapi.log.fatal(message);
-    } else {
-        console.error('FATAL', message);
-    }
+    cmsg
 }
 
 function error(...args) {
-    const message = get_message(args);
+    const message = cmsg(args);
     if (global.strapi) {
         global.strapi.log.error(message);
     } else {
@@ -29,7 +21,7 @@ function error(...args) {
 }
 
 function warn(...args) {
-    const message = get_message(args);
+    const message = cmsg(args);
     if (global.strapi) {
         global.strapi.log.warn(message);
     } else {
@@ -37,8 +29,12 @@ function warn(...args) {
     }
 }
 
+function debug(...args) {
+    debug_tool(cmsg(args));
+}
+
 function info(...args) {
-    const message = get_message(args);
+    const message = cmsg(args);
     if (global.strapi) {
         global.strapi.log.info(message);
     } else {
@@ -46,23 +42,13 @@ function info(...args) {
     }
 }
 
-function debug(...args) {
-    if (process.env.DEBUG) {
-        const message = get_message(args);
-        if (global.strapi) {
-            global.strapi.log.debug(message);
-        } else {
-            console.log('DEBUG', message);
-        }
-    }
-}
-
-function get_message(args) {
+function cmsg(...args) {
+    if (args.length === 1 && Array.isArray(args[0])) args = args[0];
     let message = '';
     for (const value of args) {
         if (message !== '') message += ' ';
         if (typeof value === 'object') {
-            message += util.inspect(value, false, null, true);
+            message += util.inspect(value,  {breakLength: Infinity, depth: null, colors: true});
         } else {
             message += String(value);
         }

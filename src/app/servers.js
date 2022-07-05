@@ -1,10 +1,11 @@
 'use strict';
 
+const debug = require('debug')('pfapi:servers');
+const debug_verbose = require('debug')('pfapi-verbose:servers');
 const RedisPubsub = require('../lib/redis-pubsub');
 const Cacheable = require('../lib/cacheable');
 const RefreshQueue = require('../lib/refresh-queue');
 const ExpiresWatch = require('../lib/expires-watch');
-
 const get_checksum = require('../utils/get-checksum');
 const get_dependency_key = require('../utils/get-dependency-key');
 const lifecycles = require('./lifecycles');
@@ -29,7 +30,7 @@ class Servers extends RedisPubsub {
     }
     
     async on_receive(message, from) {
-        logging.debug('on_receive', {from, message})
+        debug_verbose(from, logging.cmsg(message));
         switch(message.action) {
             case 'keep-alive':
                 this.update_instances(message, from);
@@ -131,7 +132,7 @@ class Servers extends RedisPubsub {
     async on_db_upsert(message) {
         const {uid, data} = message;
         if (uid && data) {
-            logging.debug(`on_db_upsert ${uid} ${data.id}`);
+            debug('on_db_upsert', uid, data.id);
             const uids = Object.values(uids_config);
             if (uids.includes(uid)) {
                 this.app.update_config(uid, data);
@@ -151,7 +152,7 @@ class Servers extends RedisPubsub {
     async on_db_delete(message) {
         const {uid, data} = message;
         if (uid && data) {
-            logging.debug(`on_db_delete ${uid} ${data.id}`);
+            debug('on_db_delete', uid, data.id);
             const uids = Object.values(uids_config);
             if (uids.includes(uid)) {
                 this.app.del_config(uid, data);
@@ -199,9 +200,11 @@ class Servers extends RedisPubsub {
                     if (instance.started_at < started_at) {
                         this.instances.splice(i, 0, instance);
                         instance = null;
+                        break;
                     } else if (instance.started_at === started_at && from > uuid) {
                         this.instances.splice(i, 0, instance);
                         instance = null;
+                        break;
                     }
                 }
             }
@@ -216,13 +219,13 @@ class Servers extends RedisPubsub {
 
     async evict_dependent(uid, id) {
         const key = get_dependency_key({uid, id});
-        logging.debug(`evict_dependent ${key} ${uid} ${id}`);
+        debug('evict_dependent', key, uid, id);
         await this.evict_dependent_by_key(key);
     }
 
     async evict_dependent_by_key(key) {
         const keys = await this.redis_cache.get_dependencies(key);
-        logging.debug(`evict_dependent_by_key ${key}: ${keys.join(', ')}`);
+        debug('evict_dependent_by_key', key, logging.cmsg(keys));
         if (keys.length === 0) return;
         for (const key of keys) {
             const cacheable = new Cacheable({key});

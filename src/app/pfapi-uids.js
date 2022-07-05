@@ -1,5 +1,6 @@
 'use strict';
 
+const debug = require('debug')('pfapi:pfapi-uids');
 const get_checksum = require('../utils/get-checksum');
 const uids_config = require('./uids-config');
 const logging = require('./logging');
@@ -87,7 +88,7 @@ class PfapiUids {
     async load_api_keys() {
 
         if (!this.strapi.contentTypes[uids_config.keys_uid]) {
-            logging.fatal(`${uids_config.keys_uid} not found`);
+            logging.error(`${uids_config.keys_uid} not found`);
             return;
         }
 
@@ -125,7 +126,7 @@ class PfapiUids {
     async load_permissions() {
 
         if (!this.strapi.contentTypes[uids_config.permissions_uid]) {
-            logging.fatal(`${uids_config.permissions_uid} not found`);
+            logging.error(`${uids_config.permissions_uid} not found`);
             return;
         }
 
@@ -146,7 +147,7 @@ class PfapiUids {
         const config_key = this.app.get_config_key(uids_config.permissions_uid);
         this.local_cache.put(config_key, permissions, true);
 
-        logging.debug({ config_key, permissions });
+        debug(logging.cmsg({ config_key, permissions }));
      }
 
     async load_rate_limits() {

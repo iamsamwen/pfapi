@@ -3,6 +3,7 @@
 module.exports.default_configs = require('./default-configs');
 module.exports.get_config_entity = require('./get-config-entity');
 module.exports.lifecycles = require('./lifecycles');
+module.exports.logging = require('./logging');
 
 Object.assign(module.exports, require('./handle-config'));
 Object.assign(module.exports, require('./project-root'));

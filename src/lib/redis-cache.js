@@ -5,6 +5,7 @@ const get_value = require('../utils/get-value');
 const { get_redis_key, get_prefix_key } = require('../utils/redis-keys');
 const RedisBase = require('./redis-base');
 const logging = require('../app/logging');
+const debug = require('debug')('pfapi:redis-cache');
 
 class RedisCache extends RedisBase {
     
@@ -136,7 +137,7 @@ class RedisCache extends RedisBase {
 
     update_dependencies(client, cacheable, data_ttl) {
         const handle = setTimeout(async () => {
-            logging.debug(`update_dependencies ${cacheable.dependent_keys?.length}`);
+            debug('update_dependencies', cacheable.dependent_keys?.length);
             for (const key of cacheable.dependent_keys) {
                 const dep_key = get_redis_key('DEP', key);
                 const multi = client.multi();

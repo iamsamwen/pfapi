@@ -10,7 +10,7 @@ const get_body = require('../utils/get-body');
 const get_value = require('../utils/get-value');
 const get_dependent_keys = require('../app/get-dependent-keys');
 const update_params = require('../utils/update-params');
-const logging = require('../app/logging');
+const debug = require('debug')('pfapi:cacheable');
 
 const Refreshable = require('./refreshable');
 
@@ -290,8 +290,8 @@ class Cacheable {
             if (this.dependent_keys) this.dependent_keys.push(config_key);
             else this.dependent_keys = [ config_key ];
         }
-        logging.debug(`config key ${config_key}`);
-        logging.debug(`dependent_keys: ${this.dependent_keys ? this.dependent_keys.length : null}`);
+        debug('config key', config_key);
+        debug('dependent_keys', this.dependent_keys ? this.dependent_keys.length : null);
     }
 }
 

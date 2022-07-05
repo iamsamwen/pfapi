@@ -8,10 +8,15 @@ class RedisBase {
 
     /**
      * 
-     * @param {*} uri for cluster, for example: 'redis://172.31.23.70:6379,172.31.30.210:6379,172.31.22.214:6379/0' 
+     * @param {*} uri for cluster, for example: 'redis://172.31.23.70:6379,172.31.30.210:6379,172.31.22.214:6379/0'
+     *            if it is not a string, uri is used as config
      */
     constructor(uri = 'redis://localhost/0') {
-        this.config = this.parse_uri(uri);
+        if (typeof uri === 'string') {
+            this.config = this.parse_uri(uri);
+        } else {
+            this.config = uri;
+        }
         this.clients = [];
     }
 
@@ -135,17 +140,13 @@ class RedisBase {
 
     parse_uri(uri) {
         const result = parseRedisUrl(uri);
-        if (result.length === 1) {
-            const { host, port, username, password, database: db } = result[0];
-            return {host, port, username, password, db};
-        } else {
-            const config = [];
-            for (const item of result) {
-                const { host, port, username, password, database: db } = item;
-                config.push({host, port, username, password, db});
-            }
-            return config;
+        const config = [];
+        for (const item of result) {
+            const { host, port, username, password, database } = item;
+            const db = Number(database);
+            config.push({host, port, username, password, db});
         }
+        return config.length === 1 ? config[0] : config;
     }
 
     create_new_client(on_connected) {

@@ -1,6 +1,6 @@
 {
   "name": "strapi-pfapi",
-  "version": "1.8.7",
+  "version": "1.9.0",
   "description": "a strapi plugin library uses local and redis caches to achieve single digit milliseconds on average api response time.",
   "bugs": {
     "url": "https://github.com/iamsamwen/strapi-pfapi/issues"
@@ -11,7 +11,7 @@
   },
   "main": "src/index.js",
   "scripts": {
-    "test": "NODE_ENV=test mocha --timeout 10000 --reporter spec tests/*/test-*"
+    "test": "NODE_ENV=test mocha --timeout 10000 --exit --reporter spec tests/*/test-*"
   },
   "keywords": [
     "strapi",

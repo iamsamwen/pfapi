@@ -1,6 +1,6 @@
 'use strict';
 
-const AppBase = require('../../src/app-base');
+const AppBase = require('../../src/app/app-base');
 const RedisCache = require('../../src/lib/redis-cache');
 const LocalCache = require('../../src/lib/local-cache');
 

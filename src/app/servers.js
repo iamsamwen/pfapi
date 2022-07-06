@@ -2,6 +2,8 @@
 
 const debug = require('debug')('pfapi:servers');
 const debug_verbose = require('debug')('pfapi-verbose:servers');
+const logging = require('./logging');
+
 const RedisPubsub = require('../lib/redis-pubsub');
 const Cacheable = require('../lib/cacheable');
 const RefreshQueue = require('../lib/refresh-queue');
@@ -11,7 +13,6 @@ const get_dependency_key = require('../utils/get-dependency-key');
 const lifecycles = require('./lifecycles');
 const uids_config = require('./uids-config');
 const { delete_attrs_file, replace_attrs_file} = require('./handle-config');
-const logging = require('./logging');
 
 class Servers extends RedisPubsub {
 
@@ -67,7 +68,7 @@ class Servers extends RedisPubsub {
 
             await this.publish({action: 'keep-alive', started_at, now_ms});
     
-            for (let i = 0; i < this.instances; i++) {
+            for (let i = this.instances.length - 1; i >= 0; i--) {
                 const instance = this.instances[i];
                 if (now_ms - instance.now_ms > 3 * maintenance_interval) {
                     this.instances.splice(i, 1);

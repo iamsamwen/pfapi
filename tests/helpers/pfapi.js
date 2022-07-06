@@ -9,6 +9,8 @@ const composite = require('./simple-composite');
 module.exports = async (ctx, next) => {
     
 
+    if (!pfapi_app.started_at) await pfapi_app.start();
+    
     const path = ctx.request.path.replace(/\/+$/, '');
 
     switch(path) {

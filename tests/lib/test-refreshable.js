@@ -2,10 +2,8 @@
 
 const chai = require('chai');
 
-const Cacheable = require('../../src/lib/cacheable');
 const refreshable = require('../helpers/simple-refreshable');
 const Refreshable = require('../../src/lib/refreshable');
-const sleep = require('../helpers/sleep');
 
 const expect = chai.expect;
 
@@ -27,7 +25,7 @@ describe('Test refreshable', () => {
     it('from module_path', async () => {
 
         const module_refreshable = new Refreshable('/tests/helpers/simple-refreshable.js')
-        const data = await refreshable.get_data({delay_ms: 5});
+        const data = await module_refreshable.get_data({delay_ms: 5});
         //console.log(data)
         expect(data).to.deep.equal({
             data: { delayed_ms: 5 },

@@ -3,12 +3,11 @@
 const chai = require('chai');
 const axios = require('axios');
 
-const { run_script2, kill_script } = require('./helpers/run-script');
-const sleep = require('./helpers/sleep');
+const { run_script2, kill_script } = require('../helpers/run-script');
 
 const expect = chai.expect;
 
-// NODE_ENV=test mocha --timeout 30000 --reporter spec tests/test-app-base
+// NODE_ENV=test mocha --timeout 30000 --reporter spec tests/lib/test-http-request
 
 describe('Test app-base', () => {
    
@@ -26,14 +25,14 @@ describe('Test app-base', () => {
         expect(headers).has.ownProperty('etag')
         expect(headers).has.ownProperty('cache-control');
         expect(headers).has.ownProperty('expires')
-        expect(headers).has.ownProperty('x-response-time')
+        expect(headers).has.ownProperty('x-pfapi-response-time')
         expect(data).has.ownProperty('delayed_ms')
 
-        const first_response_time = Number(headers['x-response-time'].split(' ')[0]);
+        const first_response_time = Number(headers['x-pfapi-response-time'].split(' ')[0]);
 
         const result = await axios.get('http://localhost:3000/random');
 
-        const second_response_time = Number(result.headers['x-response-time'].split(' ')[0]);
+        const second_response_time = Number(result.headers['x-pfapi-response-time'].split(' ')[0]);
 
         expect(first_response_time).to.be.greaterThan(second_response_time);
     });
@@ -48,16 +47,16 @@ describe('Test app-base', () => {
         expect(headers).has.ownProperty('etag')
         expect(headers).has.ownProperty('cache-control');
         expect(headers).has.ownProperty('expires')
-        expect(headers).has.ownProperty('x-response-time')
+        expect(headers).has.ownProperty('x-pfapi-response-time')
         expect(data).has.ownProperty('title');
         expect(data).has.ownProperty('random');
         expect(data).has.ownProperty('simple');
 
-        const first_response_time = Number(headers['x-response-time'].split(' ')[0]);
+        const first_response_time = Number(headers['x-pfapi-response-time'].split(' ')[0]);
 
         const result = await axios.get('http://localhost:3000/random');
 
-        const second_response_time = Number(result.headers['x-response-time'].split(' ')[0]);
+        const second_response_time = Number(result.headers['x-pfapi-response-time'].split(' ')[0]);
 
         expect(first_response_time).to.be.greaterThan(second_response_time);
     });

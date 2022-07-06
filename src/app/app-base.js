@@ -26,7 +26,7 @@ class AppBase extends HttpRequest {
     }
 
     get_app_config(name) {
-        const config = this.strapi.plugin('pfapi').config(name);
+        const config = this.strapi?.plugin('pfapi').config(name);
         if (config) return config;
         return default_configs[name];
     }
@@ -51,11 +51,11 @@ class AppBase extends HttpRequest {
         return this.get_config(uids_config.keys_uid, {key: api_key}) || 'Public';
     }
 
-    get_permission_roles({id, uid}) {
+    get_permission_roles({uid, id}) {
         if (!uid || !this.strapi.contentTypes[uid]) return [];
-        const action = `${uid}.${id ? 'findOne' : 'find'}`;
         const permissions = this.get_config(uids_config.permissions_uid);
         if (!permissions) return [];
+        const action = `${uid}.${id ? 'findOne' : 'find'}`;
         return permissions[action] || [];
     }
 
@@ -183,7 +183,7 @@ class AppBase extends HttpRequest {
     }
 
     is_throttled(ctx) {
-        return this.throttle.is_throttled(ctx);
+        return this.throttle?.is_throttled(ctx);
     }
 
     async start() {
@@ -194,17 +194,17 @@ class AppBase extends HttpRequest {
 
         this.redis_cache = new RedisCache(this.get_app_config('redis_uri'));
 
-        this.strapi.PfapiApp = this;
+        if (this.strapi) this.strapi.PfapiApp = this;
 
         this.throttle = new HttpThrottle(this);
 
-        this.pfapi_uids = new PfapiUids(this);    
+        if (this.strapi) this.pfapi_uids = new PfapiUids(this);    
 
         this.servers = new Servers(this);
 
         this.started_at = Date.now();
 
-        await this.pfapi_uids.start(this.config.sync_interval || 3600000);
+        if (this.pfapi_uids) await this.pfapi_uids.start(this.config.sync_interval || 3600000);
 
         await this.servers.start(this.started_at, this.config.maintenance_interval || 100000);
 

@@ -1,41 +1,21 @@
 'use strict';
 
-const os = require("os");
-const fs = require('fs');
-const node_path = require('path');
-
-let project_root_dir;
+const find_project_root = require('./find-project-root');
 
 module.exports = {
     set,
-    get,
-    find,
+    get
 };
+
+let project_root_dir;
 
 function set(root_dir) {
     project_root_dir = root_dir;
 }
 
 function get() {
-    if (!project_root_dir) find();
-    return project_root_dir;
-}
-
-/**
- * specific for strapi running environment
- * 
- * @returns project root
- */
-function find() {
-    
-    if (global.strapi) {
-
-        project_root_dir = global.strapi.dirs.root;
-
-        return project_root_dir;
-    
-    } else {
-        
-        throw new Error('failed to find project root directory');
+    if (!project_root_dir) {
+        project_root_dir = find_project_root();
     }
+    return project_root_dir;
 }

@@ -12,7 +12,7 @@ strapi-pfapi uses HTTP headers: etag, cache-control, expires, if-modified-since 
 
 The Refreshable class makes it possible to get data from Strapi Entity Service API, Query Engine API, other API services and databases. The Composite class aggregates multiple Refreshable results and name value components of dynamic zone into one response. Query params, such as fields, filters, populate, etc., are defined in the config and accessible without delay through the local cache.
 
-It supports production environment that runs multiple Strapi servers and Redis cluster to avoid single-point failure. It auto-reconnect to the Redis server if it restarted.
+It supports production environment that runs multiple Strapi servers and Redis cluster to avoid single-point failure. It auto-reconnects to the Redis server if it restarted.
 
 It is powerful, extensible, and can efficiently serve the data retrieving services covered by Strapi content-type APIs.
 

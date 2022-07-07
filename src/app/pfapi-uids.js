@@ -61,18 +61,12 @@ class PfapiUids {
             return;
         }
 
-        const items = await this.strapi.entityService.findMany(uids_config.ips_uid);
+        const list = await this.strapi.entityService.findMany(uids_config.ips_uid, {fields: ['ip', 'prefix', 'status'], filters: {status: {$ne: null}}});
 
-        if (items.length > 0) {
-            
-            const white_list = [], black_list = [];
-            for (const {ip, status} of items) {
-                if (status === 'white-list') white_list.push(ip);
-                if (status === 'black-list') black_list.push(ip);
-            }
+        if (list.length > 0) {
 
             const config_key = this.app.get_config_key(uids_config.ips_uid);
-            this.local_cache.put(config_key, { white_list, black_list }, true);
+            this.local_cache.put(config_key, list, true);
 
         } else if (!this.synced_at_ms) {
 

@@ -10,7 +10,7 @@ module.exports.get_sort = require('./get-sort');
 module.exports.get_start_limit = require('./get-start-limit');
 module.exports.get_params = require('./get-params');
 module.exports.merge_filters = require('./merge-filters');
-module.exports.is_ip_matched = require('./is-ip-matched');
+module.exports.ip_prefix_matched = require('./ip-prefix-matched');
 
 Object.assign(module.exports, require('./redis-keys'));
 Object.assign(module.exports, require('./etag'));

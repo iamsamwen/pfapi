@@ -31,24 +31,19 @@ class AppBase extends HttpRequest {
         return default_configs[name];
     }
 
-    get_white_ip_list() {
-        const lists = this.get_config(uids_config.ips_uid) || {}
-        return lists.white_list;
-    }
-
-    get_black_ip_list() {
-        const lists = this.get_config(uids_config.ips_uid) || {}
-        return lists.black_list;
+    get_ip_list() {
+        return this.get_config(uids_config.ips_uid) || [];
     }
 
     get_api_key_role(params) {
+        let role = 'Public';
         const api_key = params.api_key || params['api-key'];
         if (api_key) {
             if (params.api_key) delete params.api_key;
             else delete params['api-key'];
+            role = this.get_config(uids_config.keys_uid, {key: api_key})
         }
-        if (!api_key) return 'Public';
-        return this.get_config(uids_config.keys_uid, {key: api_key}) || 'Public';
+        return [ api_key, role ];
     }
 
     get_permission_roles({uid, id}) {
@@ -180,10 +175,6 @@ class AppBase extends HttpRequest {
         } else {
             await cache_requests(ctx, this.http_response, this.local_cache, this.redis_cache);
         }
-    }
-
-    is_throttled(ctx) {
-        return this.throttle?.is_throttled(ctx);
     }
 
     async start() {

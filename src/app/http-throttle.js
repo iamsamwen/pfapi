@@ -1,8 +1,6 @@
 'use strict';
 
-const default_configs = require('./default-configs');
 const Netmask = require('netmask').Netmask;
-
 const Throttle = require('../lib/throttle');
 
 class HttpThrottle extends Throttle {
@@ -29,18 +27,10 @@ class HttpThrottle extends Throttle {
         if (this.app.is_white_listed && this.app.is_white_listed(ctx)) {
             return null;
         }
-        const {ip_mask, prefix} = params;
-        if (prefix) {
-            if (!ctx.path.startsWith(prefix)) return false;
-        }
-        try {
-            const mask = new Netmask(ctx.ip, ip_mask);
-            const base = mask.base;
-            return {base, prefix};
-        } catch(err) {
-            console.error(err);
-            return false;
-        }
+        const prefix = params.prefix || '';
+        if (prefix && !ctx.path.startsWith(prefix)) return false;
+        const base = params.ip_mask ? new Netmask(ctx.ip, params.ip_mask).base : '';
+        return {base, prefix};
     }
 }
 

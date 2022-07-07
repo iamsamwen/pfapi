@@ -18,7 +18,7 @@ class PfapiApp extends AppBase {
         const status = ip_prefix_matched(ctx, list);
         const result = status === 'white-list'
         debug('is_white_listed', logging.cmsg({result, ip: ctx.ip, path: ctx.path}));
-        debug_verbose('is_white_listed list', logging.cmsg(list));
+        debug_verbose('is_white_listed list', logging.cmsg({list}));
         return result;
     }
 
@@ -27,7 +27,7 @@ class PfapiApp extends AppBase {
         const status = ip_prefix_matched(ctx, list);
         const result = status === 'black-list'
         debug('is_blocked', logging.cmsg({result, ip: ctx.ip, path: ctx.path}));
-        debug_verbose('is_blocked list', logging.cmsg(list))
+        debug_verbose('is_blocked list', logging.cmsg({list}))
         return result;
     } 
 
@@ -46,7 +46,7 @@ class PfapiApp extends AppBase {
             result = roles.includes(role);
         }
         debug('is_auth', logging.cmsg({result, role, api_key }));
-        debug_verbose('iis_auth roles', logging.cmsg(roles))
+        debug_verbose('is_auth roles', logging.cmsg({roles}))
         return result;
     }
 

@@ -4,6 +4,8 @@ const debug = require('debug')('pfapi:pfapi-uids');
 const logging = require('./logging');
 const get_checksum = require('../utils/get-checksum');
 const uids_config = require('./uids-config');
+const Netmask = require('netmask').Netmask;
+const { matches } = require('ip-matching');
 
 class PfapiUids {
     
@@ -65,6 +67,18 @@ class PfapiUids {
 
         if (list.length > 0) {
 
+            for (let i = list.length - 1; i >= 0; i--) {
+                const { ip } = list[i];
+                if (ip === 'invalid') continue;
+                if (ip) {
+                    try {
+                        matches('1.2.3.4', ip);
+                    } catch (err) {
+                        logging.error(ip, err.message);
+                        continue;
+                    }
+                }
+            }
             const config_key = this.app.get_config_key(uids_config.ips_uid);
             this.local_cache.put(config_key, list, true);
 
@@ -158,7 +172,15 @@ class PfapiUids {
         if (items.length > 0) {
 
             for (const { ip_mask, prefix, window_secs, max_count, block_secs} of items) {
-                if (!ip_mask || !window_secs || !max_count) continue;
+                if (ip_mask === 'invalid' || !window_secs || !max_count) continue;
+                if (ip_mask) {
+                    try {
+                        new Netmask('1.2.3.4', ip_mask);
+                    } catch (err) {
+                        logging.error(ip_mask, err.message);
+                        continue;
+                    }
+                }
                 rate_limits.push({ip_mask, prefix, window_secs, max_count, block_secs});
             }
             this.app.throttle.apply_rate_limits(rate_limits);

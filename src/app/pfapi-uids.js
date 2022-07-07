@@ -1,9 +1,9 @@
 'use strict';
 
 const debug = require('debug')('pfapi:pfapi-uids');
+const logging = require('./logging');
 const get_checksum = require('../utils/get-checksum');
 const uids_config = require('./uids-config');
-const logging = require('./logging');
 
 class PfapiUids {
     

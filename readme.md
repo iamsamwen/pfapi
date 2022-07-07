@@ -16,6 +16,13 @@ It supports production environment that runs multiple Strapi servers and Redis c
 
 It is powerful, extensible, and can efficiently serve the data retrieving services covered by Strapi content-type APIs.
 
-## how to use
+## how it works
 
 please refer to <a href="https://github.com/iamsamwen/strapi-plugin-pfapi">strapi-plugin-pfapi</a> to see how it works.
+
+## how to use
+
+use strapi-plugin-pfapi as an example.
+
+
+

@@ -1,6 +1,6 @@
 'use strict';
 
-const ignore_keys = [ 'provider', 'provider_metadata', 'comment', 'createdAt', 'updatedAt', 'publishedAt', 'createdBy', 'updatedBy' ];
+const ignore_keys = [ 'hash', 'provider', 'provider_metadata', 'comment', 'createdAt', 'updatedAt', 'publishedAt', 'createdBy', 'updatedBy' ];
 
 module.exports = {
     transform_config,

@@ -4,19 +4,12 @@ const fs = require('fs');
 const node_path = require('path');
 
 /**
- * specific for strapi running environment
- * 
- * @returns project root
- */
-
-/**
  *  specific for strapi running environment
  * 
  * @param {*} relative_dirname related to project root
  *                             for example: src/plugins/xyz/code_folder
- * 
  * @param {*} full_dirname __dirname
- * @returns 
+ * @returns strapi project root
  */
 module.exports = (relative_dirname, full_dirname) => {
     

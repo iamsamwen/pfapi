@@ -14,37 +14,58 @@ class PfapiApp extends AppBase {
     }
 
     is_white_listed(ctx) {
+        if (ctx.state?.pfapi_white_listed !== undefined) {
+            return ctx.state.pfapi_white_listed;
+        }
         const list = this.get_ip_list();
         const status = ip_prefix_matched(ctx, list);
         const result = status === 'white-list'
+        if (ctx.state) ctx.state.pfapi_white_listed = result;
+        else ctx.state = {pfapi_white_listed: result};
         debug('is_white_listed', logging.cmsg({result, ip: ctx.ip, path: ctx.path}));
         debug_verbose('is_white_listed list', logging.cmsg({list}));
         return result;
     }
 
     is_blocked(ctx) {
+        if (ctx.state?.pfapi_black_listed !== undefined) {
+            return ctx.state.pfapi_black_listed;
+        }
         const list = this.get_ip_list();
         const status = ip_prefix_matched(ctx, list);
-        const result = status === 'black-list'
+        const result = status === 'black-list';
+        if (ctx.state) ctx.state.pfapi_black_listed = result;
+        else ctx.state = {pfapi_black_listed: result};
         debug('is_blocked', logging.cmsg({result, ip: ctx.ip, path: ctx.path}));
         debug_verbose('is_blocked list', logging.cmsg({list}))
         return result;
     } 
 
     is_throttled(ctx) {
+        if (ctx.state?.pfapi_is_throttled !== undefined) {
+            return ctx.state.pfapi_is_throttled;
+        }
         const result = this.throttle?.is_throttled(ctx);
+        if (ctx.state) ctx.state.pfapi_is_throttled = result;
+        else ctx.state = {pfapi_is_throttled: result}
         debug('is_throttled', logging.cmsg({result, ip: ctx.ip, path: ctx.path}));
         debug_verbose('is_throttled throttles', logging.cmsg(this.throttle ? this.throttle.get_throttles(): 'throttle is not setup'));
         return result;
     }
 
     is_auth(ctx, params) {
+        if (ctx.state?.pfapi_is_auth !== undefined) {
+            return ctx.state.pfapi_is_auth;
+        }
         let result = false, api_key, role;
         const roles = this.get_permission_roles(params);
         if (roles) {
             [api_key, role] = this.get_api_key_role(params);
             result = roles.includes(role);
         }
+        const state = {pfapi_is_auth: result, pfapi_role: role, pfapi_api_key: api_key};
+        if (ctx.state) Object.assign(ctx.state, state);
+        else ctx.state = state;
         debug('is_auth', logging.cmsg({result, role, api_key }));
         debug_verbose('is_auth roles', logging.cmsg({roles}))
         return result;

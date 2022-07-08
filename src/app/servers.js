@@ -264,7 +264,7 @@ class Servers extends RedisPubsub {
         this.subscribed_uids.push(uid);
         if (publish) this.publish({uid, action: 'subscribe-db-event'});
         this.strapi.db.lifecycles.subscribe(lifecycles(this, uid));
-        logging.info(`subscribe_lifecycle_events ${uid}`);
+        logging.debug(`subscribe_lifecycle_events ${uid}`);
     }
 
     save_lifecycle_uid(uid) {

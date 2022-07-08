@@ -63,31 +63,45 @@ class PfapiUids {
             return;
         }
 
-        const list = await this.strapi.entityService.findMany(uids_config.ips_uid, {fields: ['ip', 'prefix', 'status'], filters: {status: {$ne: null}}});
+        const items = await this.strapi.entityService.findMany(uids_config.ips_uid, {populate: '*'});
 
-        if (list.length > 0) {
-
-            for (let i = list.length - 1; i >= 0; i--) {
-                const { ip } = list[i];
-                if (ip === 'invalid') continue;
-                if (ip) {
-                    try {
-                        matches('1.2.3.4', ip);
-                    } catch (err) {
-                        logging.error(ip, err.message);
-                        continue;
+        if (items.length > 0) {
+            const list = [];
+            for (const {name, ip_prefix_list} of items){
+                for (const {ip_cidr, prefix, status} of ip_prefix_list) {
+                    if (ip_cidr) {
+                        try {
+                            matches('1.2.3.4', ip_cidr);
+                        } catch (err) {
+                            logging.error(name, ip_cidr, err.message);
+                            continue;
+                        }
                     }
+                    list.push({name, ip_cidr, prefix, status})
                 }
             }
-            const config_key = this.app.get_config_key(uids_config.ips_uid);
-            this.local_cache.put(config_key, list, true);
+            if (list.length > 0) {
+                const config_key = this.app.get_config_key(uids_config.ips_uid);
+                this.local_cache.put(config_key, list, true);
+            }
 
         } else if (!this.synced_at_ms) {
 
             const config = this.app.get_app_config('Ip');
             if (config && Array.isArray(config) && config.length > 0) {
-                for (const data of config) {
-                    await this.strapi.entityService.create(uids_config.ips_uid, {data});
+                for (const item of config) {
+                    for (const [name, value] of Object.entries(item)) {
+                        if (!name) continue;
+                        if (!Array.isArray(value)) continue;
+                        const ip_prefix_list = [];
+                        for (const {ip_cidr, prefix, status, comment} of value) {
+                            if (ip_cidr === undefined || prefix === undefined) continue;
+                            if (!status || !['white-list', 'black-list'].includes(status)) continue;
+                            ip_prefix_list.push({__component: 'pfapi-types.ip-prefix', ip_cidr, prefix, status, comment});
+                        }
+                        if (ip_prefix_list.length === 0) continue;
+                        await this.strapi.entityService.create(uids_config.ips_uid, {data: {name, ip_prefix_list}});
+                    }
                 }
             }
         }

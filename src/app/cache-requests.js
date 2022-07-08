@@ -10,7 +10,7 @@ module.exports = async (ctx, http_response, local_cache, redis_cache) => {
         } else {
             const data = local_cache.get_with_info(key);
             if (data) http_response.handle_nocache_request(ctx, 200, data);
-            else http_response.handle_nocache_request(ctx, 404, {message: 'Not Found'});
+            else http_response.handle_error(ctx, 404, 'Not Found', 'cache-requests');
         }
     } else if (type === 'redis' && redis_cache) {
         if (key === 'list') {
@@ -22,9 +22,9 @@ module.exports = async (ctx, http_response, local_cache, redis_cache) => {
         } else {
             const data = await redis_cache.get(key);
             if (data) http_response.handle_nocache_request(ctx, 200, data);
-            else http_response.handle_nocache_request(ctx, 404, {message: 'Not Found'});
+            else http_response.handle_error(ctx, 404, 'Not Found', 'cache-requests');
         }
     } else {
-        http_response.handle_nocache_request(ctx, 404, {message: 'Not Found'});
+        http_response.handle_error(ctx, 404, 'Not Found', 'cache-requests');
     }
 }

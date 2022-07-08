@@ -26,6 +26,23 @@ class HttpRequest {
         return true;
     }
 
+    defense_ok(ctx) {
+        if (ctx.state?.pfapi_defense_ok !== undefined) {
+            return ctx.state.pfapi_defense_ok;
+        }
+        let ok = true;
+        if (this.is_blocked(ctx)) {
+            this.http_response.handle_error(ctx, 403, 'Forbidden');
+            ok = false;
+        } else if (this.is_throttled(ctx)) {
+            this.http_response.handle_error(ctx, 429, 'Too Many Requests');
+            ok = false;
+        }
+        if (ctx.state) ctx.state.pfapi_defense_ok = ok;
+        else ctx.state = {pfapi_defense_ok: ok};
+        return ok;
+    }
+
     /**
      * 
      * @param {*} ctx 
@@ -37,21 +54,13 @@ class HttpRequest {
 
         let cache_key;
 
-        if (this.is_blocked(ctx)) {
-
-            this.http_response.handle_nocache_request(ctx, 403, {message: 'Forbidden'});
-
-        } else if (this.is_throttled(ctx)) {
-
-            this.http_response.handle_nocache_request(ctx, 429, {message: 'Too Many Requests'});
-
-        } else {
+        if (this.defense_ok(ctx)) {
 
             const params = this.get_params(ctx);
 
             if (!this.is_auth(ctx, params)) {
 
-                this.http_response.handle_nocache_request(ctx, 401, {message: 'Unauthorized'});
+                this.http_response.handle_error(ctx, 401, 'Unauthorized');
 
             } else if (object instanceof Refreshable) {
 
@@ -63,7 +72,7 @@ class HttpRequest {
 
             } else {
 
-                this.http_response.handle_nocache_request(ctx, 500, {message: 'unknown object type'});
+                this.http_response.handle_error(ctx, 500, 'Server Internal Error', 'handle', {reason: 'unknown object type'});
 
             }
         }
@@ -92,7 +101,7 @@ class HttpRequest {
 
                 } else {
 
-                    this.http_response.handle_nocache_request(ctx, 404, {message: 'Not Found'});
+                    this.http_response.handle_error(ctx, 404, 'Not Found', 'handle_refreshable_request');
 
                 }
             } else {
@@ -103,7 +112,7 @@ class HttpRequest {
 
                 } else {
 
-                    this.http_response.handle_nocache_request(ctx, 404, {message: 'Not Found'});
+                    this.http_response.handle_error(ctx, 404, 'Not Found', 'handle_refreshable_request');
                 }
             }
             
@@ -111,12 +120,12 @@ class HttpRequest {
 
             if (err.message.startsWith('Not Found')) {
 
-                this.http_response.handle_nocache_request(ctx, 404, {message: err.message});
+                this.http_response.handle_error(ctx, 404, 'Not Found', 'handle_refreshable_request', {reason: err.message});
 
             } else {
 
                 logging.error(err);
-                this.http_response.handle_nocache_request(ctx, 500, {message: 'failed'});
+                this.http_response.handle_error(ctx, 500, 'Server Internal Error', 'handle_refreshable_request', {reason: err.message});
             }
         }
         

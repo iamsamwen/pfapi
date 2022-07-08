@@ -26,8 +26,20 @@ class HttpResponse {
                 this.handle_head_get_request(ctx, cacheable);
                 break;
             default:
-                this.handle_nocache_request(ctx, 405, {message: `Method Not Allowed: ${ctx.request.method}`});
+                this.handle_error(ctx, 405, `Method Not Allowed: ${ctx.request.method}`);
         }
+    }
+
+    handle_error(ctx, status, message = '', name = '', details = {}, data = null) {
+
+        const { headers } = this.prepare_headers(ctx);
+
+        ctx.status = status;
+        if (!message) message = ctx.response.message;
+        ctx.body = get_body({data, error: {status, name, message, details}});
+        ctx.type = this.config.content_type;
+
+        for (const [key, value] of Object.entries(headers)) ctx.set(key, value);
 
     }
 
@@ -41,7 +53,7 @@ class HttpResponse {
         }
         
         if (method !== 'HEAD' && method !== 'GET' && status < 400) {
-            this.handle_nocache_request(ctx, 405, {message: `Method Not Allowed: ${ctx.request.method}`});
+            this.handle_error(ctx, 405, `Method Not Allowed: ${ctx.request.method}`);
             return;
         }
 

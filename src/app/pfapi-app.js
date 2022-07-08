@@ -14,6 +14,7 @@ class PfapiApp extends AppBase {
     }
 
     is_white_listed(ctx) {
+        debug_verbose('is_white_listed ctx.state', ctx.state);
         if (ctx.state?.pfapi_white_listed !== undefined) {
             return ctx.state.pfapi_white_listed;
         }
@@ -28,6 +29,7 @@ class PfapiApp extends AppBase {
     }
 
     is_blocked(ctx) {
+        debug_verbose('is_blocked ctx.state', ctx.state);
         if (ctx.state?.pfapi_black_listed !== undefined) {
             return ctx.state.pfapi_black_listed;
         }
@@ -42,6 +44,7 @@ class PfapiApp extends AppBase {
     } 
 
     is_throttled(ctx) {
+        debug_verbose('is_throttle ctx.state', ctx.state);
         if (ctx.state?.pfapi_is_throttled !== undefined) {
             return ctx.state.pfapi_is_throttled;
         }
@@ -54,6 +57,7 @@ class PfapiApp extends AppBase {
     }
 
     is_auth(ctx, params) {
+        debug_verbose('is_auth ctx.state', ctx.state);
         if (ctx.state?.pfapi_is_auth !== undefined) {
             return ctx.state.pfapi_is_auth;
         }

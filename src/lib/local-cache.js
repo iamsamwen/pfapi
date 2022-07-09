@@ -23,6 +23,9 @@ class LocalCache {
     }
 
     save(cacheable) {
+        if (this.cache_data.size > this.config.max_size) {
+            return false;
+        }
         const now_ms = Date.now();
         const { timestamp = now_ms } = cacheable;
         const ttl = cacheable.data_ttl - (now_ms - timestamp);
@@ -43,6 +46,9 @@ class LocalCache {
     }
 
     put(key, data, ttl) {
+        if (ttl !== true && this.cache_data.size > this.config.max_size) {
+            return false;
+        }
         const now_ms = Date.now();
         const object = { data };
         if (ttl === true) {

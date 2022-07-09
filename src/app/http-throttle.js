@@ -2,6 +2,7 @@
 
 const Netmask = require('netmask').Netmask;
 const Throttle = require('../lib/throttle');
+const get_ip = require('../utils/get-ip');
 
 class HttpThrottle extends Throttle {
 
@@ -29,7 +30,7 @@ class HttpThrottle extends Throttle {
         }
         const prefix = params.prefix || '';
         if (prefix && !ctx.path.startsWith(prefix)) return false;
-        const base = params.ip_mask ? new Netmask(ctx.ip, params.ip_mask).base : '';
+        const base = params.ip_mask ? new Netmask(get_ip(ctx), params.ip_mask).base : '';
         return {base, prefix};
     }
 }

@@ -6,6 +6,7 @@ const logging =  require('./logging');
 
 const AppBase = require('./app-base');
 const ip_prefix_matched = require('../utils/ip-prefix-matched');
+const get_ip = require('../utils/get-ip');
 
 class PfapiApp extends AppBase {
 
@@ -23,7 +24,7 @@ class PfapiApp extends AppBase {
         const result = status === 'white-list'
         if (ctx.state) ctx.state.pfapi_white_listed = result;
         else ctx.state = {pfapi_white_listed: result};
-        debug('is_white_listed', logging.cmsg({result, ip: ctx.ip, path: ctx.path}));
+        debug('is_white_listed', logging.cmsg({result, ip: get_ip(ctx), path: ctx.path}));
         debug_verbose('is_white_listed list', logging.cmsg({list}));
         return result;
     }
@@ -38,7 +39,7 @@ class PfapiApp extends AppBase {
         const result = status === 'black-list';
         if (ctx.state) ctx.state.pfapi_black_listed = result;
         else ctx.state = {pfapi_black_listed: result};
-        debug('is_blocked', logging.cmsg({result, ip: ctx.ip, path: ctx.path}));
+        debug('is_blocked', logging.cmsg({result, ip: get_ip(ctx), path: ctx.path}));
         debug_verbose('is_blocked list', logging.cmsg({list}))
         return result;
     } 
@@ -51,7 +52,7 @@ class PfapiApp extends AppBase {
         const result = this.throttle?.is_throttled(ctx);
         if (ctx.state) ctx.state.pfapi_is_throttled = result;
         else ctx.state = {pfapi_is_throttled: result}
-        debug('is_throttled', logging.cmsg({result, ip: ctx.ip, path: ctx.path}));
+        debug('is_throttled', logging.cmsg({result, ip: get_ip(ctx), path: ctx.path}));
         debug_verbose('is_throttled throttles', logging.cmsg(this.throttle ? this.throttle.get_throttles(): 'throttle is not setup'));
         return result;
     }

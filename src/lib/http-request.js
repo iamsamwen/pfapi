@@ -1,7 +1,6 @@
 'use strict';
 
 const fp = require('lodash/fp');
-
 const Refreshable = require('./refreshable');
 const Cacheable = require('./cacheable');
 const Composite = require('./composite');
@@ -27,9 +26,6 @@ class HttpRequest {
     }
 
     defense_ok(ctx) {
-        if (ctx.state?.pfapi_defense_ok !== undefined) {
-            return ctx.state.pfapi_defense_ok;
-        }
         let ok = true;
         if (this.is_blocked(ctx)) {
             this.http_response.handle_error(ctx, 403, 'Forbidden');

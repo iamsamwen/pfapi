@@ -1,7 +1,6 @@
 'use strict';
 
 module.exports.default_configs = require('./default-configs');
-module.exports.get_config_entity = require('./get-config-entity');
 module.exports.lifecycles = require('./lifecycles');
 module.exports.logging = require('./logging');
 module.exports.find_project_root = require('./find-project-root');

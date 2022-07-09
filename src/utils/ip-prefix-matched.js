@@ -9,7 +9,7 @@ module.exports = (ctx, list) => {
     const request_path = ctx.path;
     for (const { ip_cidr, prefix, status } of list) {
         if (prefix && !request_path.startsWith(prefix)) continue;
-        if (ip_cidr && !matches(request_ip, ip_cidr)) continue;
+        if (ip_cidr && request_ip && !matches(request_ip, ip_cidr)) continue;
         return status;
     }
     return false;

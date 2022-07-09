@@ -2,7 +2,7 @@
 
 **P** stands for Powerful, **F** stands for Fast.
 
-strapi-pfapi is a library that helps write Strapi Plugins to provide powerful and fast API services.
+strapi-pfapi is a library that helps write Strapi Plugins to provide powerful, secure and fast API services.
 
 It uses local and Redis caches to keep data. Strapi life cycle events help to evict invalid cached data. It refreshes the data before or after expiration for slow apis based on a priority score. The score calculates from api usage and duration. 
 

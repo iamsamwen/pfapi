@@ -13,36 +13,51 @@ async function on_invalidate(redis, on_event, {prefix,  bcast = true, noloop = t
 
         const client = await redis.get_client();
 
-        try {
+        let error;
 
-            const id = await redis.get_client_id(new_client);
-            const argv = ['tracking', 'on', 'redirect', id, 'prefix', prefix]; 
-            if (bcast) argv.push('bcast');
-            if (noloop) argv.push('noloop');
+        for (let i = 0; i < 16; i++) {
 
-            if (await redis.send_command({client, cmd: 'client', argv}) !== 'OK') {
-                logging.error('on_invalidate, failed to send_command');
-                return;
-            }
+            const delay_ms = i ? 1000 : 0;
+            await new Promise(resolve => setTimeout(resolve, delay_ms));
 
-            if (await new_client.subscribe('__redis__:invalidate') !== 1) {
-                logging.error('on_invalidate, failed to subscribe');
-                return;
-            }
+            try {
 
-            new_client.on('message', async (channel, data) => {
-                const current_id = await redis.get_client_id(new_client);
-                if (current_id !== id) {
-                    await off_invalidate_by_id(redis, client, id);
-                    return;
+                const id = await redis.get_client_id(new_client);
+                const argv = ['tracking', 'on', 'redirect', id, 'prefix', prefix]; 
+                if (bcast) argv.push('bcast');
+                if (noloop) argv.push('noloop');
+
+                if (await redis.send_command({client, cmd: 'client', argv}) !== 'OK') {
+                    error = 'on_invalidate, failed to send_command';
+                    break;
                 }
-                const redis_keys = data.split(',');
-                await on_event(redis_keys);
-            });
 
-        } catch(err) {
-            logging.error(err);
+                if (await new_client.subscribe('__redis__:invalidate') !== 1) {
+                    error = 'on_invalidate, failed to subscribe';
+                    break;
+                }
+
+                new_client.on('message', async (channel, data) => {
+                    const current_id = await redis.get_client_id(new_client);
+                    if (current_id !== id) {
+                        await off_invalidate_by_id(redis, client, id);
+                        return;
+                    }
+                    const redis_keys = data.split(',');
+                    await on_event(redis_keys);
+                });
+
+                error = null;
+
+                break;
+
+            } catch(err) {
+                error = err;
+            }
         }
+
+        if (error) logging.error(error);
+
     });
 }
 

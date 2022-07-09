@@ -9,7 +9,7 @@ const expect = chai.expect;
 
 // NODE_ENV=test mocha --timeout 30000 --reporter spec tests/lib/test-http-request
 
-describe('Test app-base', () => {
+describe('Test http-request', () => {
    
     before(async() => {
         await run_script2('node', `${process.cwd()}/tests/helpers/koa-server.js`);

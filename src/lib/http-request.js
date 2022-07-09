@@ -128,13 +128,17 @@ class HttpRequest {
         return cacheable ? cacheable.key : null;
     }
 
+    get_pfapi_config(ctx) {
+        return null;
+    }
+
     async handle_composite_request(ctx, params, composite)  {
     
         const data = {};
 
         const result = { data, params : [] };
     
-        const config = params.handle && this.get_handle_config ? this.get_handle_config(params.handle) : null;
+        const config = this.get_pfapi_config(ctx);
 
         if (config) {
             if (config.attributes) {

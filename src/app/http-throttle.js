@@ -25,7 +25,7 @@ class HttpThrottle extends Throttle {
     }
 
     get_signature(ctx, params) {
-        if (this.app.is_white_listed && this.app.is_white_listed(ctx)) {
+        if (this.app.is_allow_listed && this.app.is_allow_listed(ctx)) {
             return null;
         }
         const prefix = params.prefix || '';

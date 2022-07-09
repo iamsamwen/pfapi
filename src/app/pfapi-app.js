@@ -14,18 +14,18 @@ class PfapiApp extends AppBase {
         super(strapi);
     }
 
-    is_white_listed(ctx) {
-        debug_verbose('is_white_listed ctx.state', ctx.state);
-        if (ctx.state?.pfapi_white_listed !== undefined) {
-            return ctx.state.pfapi_white_listed;
+    is_allow_listed(ctx) {
+        debug_verbose('is_allow_listed ctx.state', ctx.state);
+        if (ctx.state?.pfapi_allow_listed !== undefined) {
+            return ctx.state.pfapi_allow_listed;
         }
         const list = this.get_ip_list();
         const status = ip_prefix_matched(ctx, list);
-        const result = status === 'white-list'
-        if (ctx.state) ctx.state.pfapi_white_listed = result;
-        else ctx.state = {pfapi_white_listed: result};
-        debug('is_white_listed', logging.cmsg({result, ip: get_ip(ctx), path: ctx.path}));
-        debug_verbose('is_white_listed list', logging.cmsg({list}));
+        const result = status === 'allow-list'
+        if (ctx.state) ctx.state.pfapi_allow_listed = result;
+        else ctx.state = {pfapi_allow_listed: result};
+        debug('is_allow_listed', logging.cmsg({result, ip: get_ip(ctx), path: ctx.path}));
+        debug_verbose('is_allow_listed list', logging.cmsg({list}));
         return result;
     }
 
@@ -36,7 +36,7 @@ class PfapiApp extends AppBase {
         }
         const list = this.get_ip_list();
         const status = ip_prefix_matched(ctx, list);
-        const result = status === 'black-list';
+        const result = status === 'block-list';
         if (ctx.state) ctx.state.pfapi_black_listed = result;
         else ctx.state = {pfapi_black_listed: result};
         debug('is_blocked', logging.cmsg({result, ip: get_ip(ctx), path: ctx.path}));

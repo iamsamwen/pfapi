@@ -140,29 +140,39 @@ class AppBase extends HttpRequest {
         }
     }
 
-    get_params(ctx) {
-        const params = get_params(ctx);
-        const { handle,  id } = params;
-        const config = handle ? this.get_config(uids_config.handle_uid, { handle }) : null;
-        if (config && config.uid) {
-            params.uid = config.uid;
-        } else if (handle) {
-            const cache_key = get_checksum('uid_models');
-            const models = this.local_cache.get(cache_key);
-            params.uid = models[handle];
+    get_pfapi_config(ctx) {
+        if (ctx.state?.pfapi_config !== undefined) {
+            return ctx.state?.pfapi_config;
         }
-        if (id) this.update_params_id(config, params, id);
-        return params;
+        let config = null;
+        if (ctx.params?.handle) {
+            config = this.get_config(uids_config.handle_uid, { handle: ctx.params.handle });
+        }
+        if (ctx.state) ctx.state.pfapi_config = config;
+        else ctx.state = {pfapi_config: config};
+        return config;
     }
 
-    update_params_id(config, params, id) {
-        const id_field = config && config.id_field ? config.id_field : 'id';
-        if (params.filters) {
-            if (params.filters.$and) params.filters.$and.push({[id_field]: id})
-            else params.filters[id_field] = id;
-        } else {
-            params.filters = {[id_field]: id};
+    get_params(ctx) {
+        const params = get_params(ctx);
+        const config = this.get_pfapi_config(ctx);
+        if (config && config.uid) {
+            params.uid = config.uid;
+        } else if (params.handle) {
+            const cache_key = get_checksum('uid_models');
+            const models = this.local_cache.get(cache_key);
+            params.uid = models[params.handle];
         }
+        if (params.id) {
+            const id_field = config && config.id_field ? config.id_field : 'id';
+            if (params.filters) {
+                if (params.filters.$and) params.filters.$and.push({[id_field]: params.id})
+                else params.filters[id_field] = params.id;
+            } else {
+                params.filters = {[id_field]: params.id};
+            }
+        }
+        return params;
     }
 
     subscribe_lifecycle_events(uid, publish = true) {

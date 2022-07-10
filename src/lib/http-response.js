@@ -161,14 +161,16 @@ class HttpResponse {
                     return true;
                 }
             }
+            return head_only;
         }
-        
+
         if (header['if-modified-since']) {
             const if_modified_since = Date.parse(header['if-modified-since']);
             if (modified_time <= if_modified_since) {
                 ctx.status = 304;
                 return true;
             }
+            return head_only;
         }
 
         return head_only;

@@ -23,6 +23,9 @@ class AppBase extends HttpRequest {
         this.strapi = strapi;
         global.PfapiApp = this;
         this.config = this.get_app_config('AppBase');
+        if (this.config.proxy !== false) {
+            if (strapi) strapi.server.app.proxy = true;
+        }
     }
 
     get_app_config(name) {

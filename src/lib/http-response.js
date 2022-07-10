@@ -163,7 +163,7 @@ class HttpResponse {
             }
             return head_only;
         }
-        
+
         if (header['if-modified-since']) {
             const if_modified_since = Date.parse(header['if-modified-since']);
             if (modified_time <= if_modified_since) {

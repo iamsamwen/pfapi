@@ -161,6 +161,7 @@ class HttpResponse {
                     return true;
                 }
             }
+            return head_only;
         }
         
         if (header['if-modified-since']) {
@@ -169,6 +170,7 @@ class HttpResponse {
                 ctx.status = 304;
                 return true;
             }
+            return head_only;
         }
 
         return head_only;

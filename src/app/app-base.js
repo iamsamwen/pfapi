@@ -88,7 +88,16 @@ class AppBase extends HttpRequest {
     }
 
     del_config(uid, data) {
-        if (uid === uids_config.keys_uid || uid === uids_config.handle_uid) {
+        if (uid === uids_config.keys_uid) {
+            const config_key = this.get_config_key(uid, data);
+            this.local_cache.delete(config_key);
+            const ids_map_key = get_checksum('ids_config_keys_map');
+            const ids_map = this.local_cache.get(ids_map_key);
+            if (ids_map) {
+                const str_id = String(data.id);
+                delete ids_map[str_id];
+            }
+        } else if (uid === uids_config.handle_uid) {
             const config_key = this.get_config_key(uid, data);
             this.local_cache.delete(config_key);
         } else if (uid === uids_config.ips_uid) {

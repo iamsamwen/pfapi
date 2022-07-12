@@ -26,7 +26,11 @@ class PfapiUids {
         this.sync_timer = setInterval(async () => {
 
             await this.load_all();
+
             this.synced_at_ms = Date.now();
+
+            const before_ms = this.synced_at_ms - (this.app.config.keep_log_days || 7) * 3600000 * 24;
+            await this.strapi.db.query(uids_config.activity_uid).deleteMany({where: {started_at_ms: {$lt: before_ms}}});
 
         }, sync_interval);
     }
@@ -42,7 +46,11 @@ class PfapiUids {
         const uids = Object.values(uids_config);
 
         for (const uid of uids) {
-            if (uid === uids_config.state_uid || uid === uids_config.roles_uid) continue;
+
+            if (uid === uids_config.state_uid || 
+                uid === uids_config.roles_uid ||
+                uid === uids_config.activity_uid) continue;
+
             this.app.subscribe_lifecycle_events(uid, false);
         }
 
@@ -118,11 +126,25 @@ class PfapiUids {
         
         if (items.length > 0) {
 
-            for (const { key, role} of items) {
+            // ids_map to make it possible to remove old key if key changes
+            const ids_map_key = get_checksum('ids_config_keys_map');
+            const ids_map = this.local_cache.get(ids_map_key) || {};
+
+            for (const { id, key, role } of items) {
                 if (!role || !role.name) continue;
+
                 const config_key = this.app.get_config_key(uids_config.keys_uid, {key})
                 this.local_cache.put(config_key, role.name, true);
+
+                const str_id = String(id);
+                const old_config_key = ids_map[str_id];
+                if (old_config_key && old_config_key !== config_key) {
+                    this.local_cache.delete(old_config_key);
+                }
+                ids_map[str_id] = config_key;
             }
+
+            this.local_cache.put(ids_map_key, ids_map, true);
 
         } else if (!this.synced_at_ms) {
 

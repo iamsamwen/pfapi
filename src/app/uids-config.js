@@ -2,6 +2,7 @@
 
 module.exports = {
 
+    activity_uid: 'plugin::pfapi.pfapi-activity',
     state_uid: 'plugin::pfapi.pfapi-state',
     
     handle_uid: 'plugin::pfapi.pfapi-handle', 

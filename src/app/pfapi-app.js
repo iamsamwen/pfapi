@@ -16,14 +16,14 @@ class PfapiApp extends AppBase {
 
     is_allow_listed(ctx) {
         debug_verbose('is_allow_listed ctx.state', ctx.state);
-        if (ctx.state?.pfapi_allow_listed !== undefined) {
-            return ctx.state.pfapi_allow_listed;
+        if (ctx.state.pfapi?.allowed !== undefined) {
+            return ctx.state.pfapi.allowed;
         }
         const list = this.get_ip_list();
         const status = ip_prefix_matched(ctx, list);
         const result = status === 'allow-list'
-        if (ctx.state) ctx.state.pfapi_allow_listed = result;
-        else ctx.state = {pfapi_allow_listed: result};
+        if (!ctx.state.pfapi) ctx.state.pfapi = {};
+        ctx.state.pfapi.allowed = result;
         debug('is_allow_listed', logging.cmsg({result, ip: get_ip(ctx), path: ctx.path}));
         debug_verbose('is_allow_listed list', logging.cmsg({list}));
         return result;
@@ -31,14 +31,14 @@ class PfapiApp extends AppBase {
 
     is_blocked(ctx) {
         debug_verbose('is_blocked ctx.state', ctx.state);
-        if (ctx.state?.pfapi_black_listed !== undefined) {
-            return ctx.state.pfapi_black_listed;
+        if (ctx.state.pfapi?.blocked !== undefined) {
+            return ctx.state.pfapi.blocked;
         }
         const list = this.get_ip_list();
         const status = ip_prefix_matched(ctx, list);
         const result = status === 'block-list';
-        if (ctx.state) ctx.state.pfapi_black_listed = result;
-        else ctx.state = {pfapi_black_listed: result};
+        if (!ctx.state.pfapi) ctx.state.pfapi = {};
+        ctx.state.pfapi.blocked = result;
         debug('is_blocked', logging.cmsg({result, ip: get_ip(ctx), path: ctx.path}));
         debug_verbose('is_blocked list', logging.cmsg({list}))
         return result;
@@ -46,12 +46,12 @@ class PfapiApp extends AppBase {
 
     is_throttled(ctx) {
         debug_verbose('is_throttle ctx.state', ctx.state);
-        if (ctx.state?.pfapi_is_throttled !== undefined) {
-            return ctx.state.pfapi_is_throttled;
+        if (ctx.state.pfapi?.throttled !== undefined) {
+            return ctx.state.pfapi.throttled;
         }
         const result = this.throttle?.is_throttled(ctx);
-        if (ctx.state) ctx.state.pfapi_is_throttled = result;
-        else ctx.state = {pfapi_is_throttled: result}
+        if (!ctx.state.pfapi) ctx.state.pfapi = {};
+        ctx.state.pfapi.throttled = result;
         debug('is_throttled', logging.cmsg({result, ip: get_ip(ctx), path: ctx.path}));
         debug_verbose('is_throttled throttles', logging.cmsg(this.throttle ? this.throttle.get_throttles(): 'throttle is not setup'));
         return result;
@@ -59,8 +59,8 @@ class PfapiApp extends AppBase {
 
     is_auth(ctx, params) {
         debug_verbose('is_auth ctx.state', ctx.state);
-        if (ctx.state?.pfapi_is_auth !== undefined) {
-            return ctx.state.pfapi_is_auth;
+        if (ctx.state.pfapi?.is_auth !== undefined) {
+            return ctx.state.pfapi.is_auth;
         }
         let result = false, api_key, role;
         const roles = this.get_permission_roles(params);
@@ -68,10 +68,10 @@ class PfapiApp extends AppBase {
             [api_key, role] = this.get_api_key_role(params);
             result = roles.includes(role);
         }
-        const state = {pfapi_is_auth: result, pfapi_role: role, pfapi_api_key: api_key};
-        if (ctx.state) Object.assign(ctx.state, state);
-        else ctx.state = state;
-        debug('is_auth', logging.cmsg({result, role, api_key }));
+        const pfapi = {is_auth: result, role, api_key};
+        if (!ctx.state.pfapi) ctx.state.pfapi = {};
+        Object.assign(ctx.state.pfapi, pfapi);
+        debug('is_auth', logging.cmsg(pfapi));
         debug_verbose('is_auth roles', logging.cmsg({roles}))
         return result;
     }

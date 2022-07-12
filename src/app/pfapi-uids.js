@@ -109,6 +109,7 @@ class PfapiUids {
 
     async load_api_keys() {
 
+        console.log('load_api_keys');
         if (!this.strapi.contentTypes[uids_config.keys_uid]) {
             logging.error(`${uids_config.keys_uid} not found`);
             return;
@@ -118,11 +119,25 @@ class PfapiUids {
         
         if (items.length > 0) {
 
-            for (const { key, role} of items) {
+            // ids_map to make it possible to remove old key if key changes
+            const ids_map_key = get_checksum('ids_config_keys_map');
+            const ids_map = this.local_cache.get(ids_map_key) || {};
+
+            for (const { id, key, role } of items) {
                 if (!role || !role.name) continue;
+
                 const config_key = this.app.get_config_key(uids_config.keys_uid, {key})
                 this.local_cache.put(config_key, role.name, true);
+
+                const str_id = String(id);
+                const old_config_key = ids_map[str_id];
+                if (old_config_key && old_config_key !== config_key) {
+                    this.local_cache.delete(old_config_key);
+                }
+                ids_map[str_id] = config_key;
             }
+
+            this.local_cache.put(ids_map_key, ids_map, true);
 
         } else if (!this.synced_at_ms) {
 

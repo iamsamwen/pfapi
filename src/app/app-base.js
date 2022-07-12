@@ -110,6 +110,17 @@ class AppBase extends HttpRequest {
                 if (old_role !== data.role.name) {
                     this.local_cache.put(config_key, data.role.name, true);
                 }
+                // removed old key if key changed
+                const ids_map_key = get_checksum('ids_config_keys_map');
+                const ids_map = this.local_cache.get(ids_map_key);
+                if (ids_map) {
+                    const str_id = String(data.id);
+                    const old_config_key = ids_map[str_id];
+                    if (old_config_key && old_config_key !== config_key) {
+                        this.local_cache.delete(old_config_key);
+                        ids_map[str_id] = config_key;
+                    }
+                }
             }
         } else if (uid === uids_config.handle_uid) {
             const config_key = this.get_config_key(uid, data);

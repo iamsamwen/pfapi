@@ -109,7 +109,6 @@ class PfapiUids {
 
     async load_api_keys() {
 
-        console.log('load_api_keys');
         if (!this.strapi.contentTypes[uids_config.keys_uid]) {
             logging.error(`${uids_config.keys_uid} not found`);
             return;

@@ -45,20 +45,33 @@ class LocalCache {
         return true;
     }
 
-    put(key, data, ttl) {
-        if (ttl !== true && this.cache_data.size > this.config.max_size) {
+    put(key, data, ttl, on_expires) {
+        const type = typeof ttl;
+        if (type === 'number' && this.cache_data.size > this.config.max_size) {
             return false;
         }
         const now_ms = Date.now();
         const object = { data };
         if (ttl === true) {
             object.permanent = true;
-        } else if (typeof ttl === 'number') {
-            object.ttl = ttl;
-            object.expires_at = now_ms + ttl;
-        } else {
-            const default_ttl = this.config.default_ttl;
-            object.expires_at = now_ms + default_ttl;
+        } else { 
+            if (type === 'number') {
+                object.ttl = ttl;
+                object.expires_at = now_ms + ttl;
+            } else if (type === 'undefined') {
+                const default_ttl = this.config.default_ttl;
+                object.expires_at = now_ms + default_ttl;
+            } else {
+                logging.error('unexpected ttl type', ttl);
+                return false;
+            }
+            if (on_expires) {
+                if (typeof on_expires !== 'function') {
+                    logging.error('unexpected, on_expires is not function');
+                } else {
+                    object.on_expires = on_expires;
+                }
+            }
         }
         this.cache_data.set(key, object);
         return true;
@@ -139,12 +152,26 @@ class LocalCache {
     }
 
     maintenance() {
-        this.timer_handle = setInterval(() => {
-            for (const [key, value] of this.cache_data.entries()) {
-                const {expires_at, permanent} = value;
+        this.timer_handle = setInterval(async () => {
+            const on_expires_list = [];
+            for (const [key, {expires_at, permanent, on_expires, data}] of this.cache_data.entries()) {
                 if (permanent) continue;
                 if (Date.now() >= expires_at) {
                     this.cache_data.delete(key);
+                    if (on_expires)  on_expires_list.push(on_expires(data));
+                }
+            }
+            if (on_expires_list.length > 0) {
+                const promises = [];
+                for (const on_expires of on_expires_list) {
+                    promises.push(on_expires);
+                    if (promises.length === this.config.batch_size || 32) {
+                        await Promise.all(promises);
+                        promises.length = 0;
+                    }
+                }
+                if (promises.length > 0) {
+                    await Promise.all(promises);
                 }
             }
             if (this.cache_data.size >= this.config.max_size) {

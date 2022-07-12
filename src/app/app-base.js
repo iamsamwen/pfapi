@@ -171,8 +171,8 @@ class AppBase extends HttpRequest {
         if (ctx.params?.handle) {
             config = this.get_config(uids_config.handle_uid, { handle: ctx.params.handle });
         }
-        if (ctx.state) ctx.state.pfapi_config = config;
-        else ctx.state = {pfapi_config: config};
+        if (!ctx.state.pfapi) ctx.state.pfapi = {};
+        ctx.state.pfapi.config = config;
         return config;
     }
 
@@ -207,6 +207,37 @@ class AppBase extends HttpRequest {
             this.http_response.handle_error(ctx, 403, 'Forbidden', 'handle_cache_requests', { reason: 'Only available for local cache debug'});
         } else {
             await cache_requests(ctx, this.http_response, this.local_cache, this.redis_cache);
+        }
+    }
+
+    async log_activity(ctx) {
+        
+        if (!this.strapi || !this.config.enable_log) return;
+
+        const { status, state: { pfapi: { config, ...pfapi }, route: {method, path, handler} }} = ctx;
+        const content_length = ctx.body ? ctx.body.length : 0;
+        const data = {status, method, path, handler, content_length, ...pfapi};
+
+        let activities = this.local_cache.get('pfapi-activities');
+        if (activities) {
+            activities.push(data);
+        } else {
+            activities = [ data ];
+            const ttl = this.local_cache.config.timer_interval || 60000;
+            this.local_cache.put('pfapi-activities', activities, ttl, async (items) => {
+                const entries = [];
+                for (let i = 0; i < items.length; i++) {
+                    entries.push(items[i]);
+                    if (entries.length === 256) {
+                        await this.strapi.db.query(uids_config.activity_uid).createMany({data: entries});
+                        entries.length = 0;
+                    }
+                }
+                if (entries.length > 0) {
+                    await this.strapi.db.query(uids_config.activity_uid).createMany({data: entries});
+                }
+            })
+
         }
     }
 

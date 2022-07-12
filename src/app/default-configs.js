@@ -38,8 +38,10 @@ module.exports = {
         default_ttl: 180000,
     
         // run maintenance interval
-        timer_interval: 30000,
+        timer_interval: 60000,
 
+        // on expire batch_size
+        batch_size: 32
     },
 
     RefreshQueue: {
@@ -93,6 +95,9 @@ module.exports = {
     
         send_response_time: true,
 
+        enable_log: true,
+
+        keep_log_days: 7,
     }
 
 };

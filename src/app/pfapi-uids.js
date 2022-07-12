@@ -26,7 +26,11 @@ class PfapiUids {
         this.sync_timer = setInterval(async () => {
 
             await this.load_all();
+
             this.synced_at_ms = Date.now();
+
+            const before_ms = this.synced_at_ms - (this.app.config.keep_log_days || 7) * 3600000 * 24;
+            await this.strapi.db.query(uids_config.activity_uid).deleteMany({where: {started_at_ms: {$lt: before_ms}}});
 
         }, sync_interval);
     }
@@ -42,7 +46,11 @@ class PfapiUids {
         const uids = Object.values(uids_config);
 
         for (const uid of uids) {
-            if (uid === uids_config.state_uid || uid === uids_config.roles_uid) continue;
+
+            if (uid === uids_config.state_uid || 
+                uid === uids_config.roles_uid ||
+                uid === uids_config.activity_uid) continue;
+
             this.app.subscribe_lifecycle_events(uid, false);
         }
 

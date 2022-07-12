@@ -34,8 +34,6 @@ class HttpRequest {
             this.http_response.handle_error(ctx, 429, 'Too Many Requests');
             ok = false;
         }
-        if (ctx.state) ctx.state.pfapi_defense_ok = ok;
-        else ctx.state = {pfapi_defense_ok: ok};
         return ok;
     }
 
@@ -46,6 +44,7 @@ class HttpRequest {
      */
     async handle(ctx, object) {
 
+        const started_at_ms = Date.now();
         const start_time = process.hrtime.bigint();
 
         let cache_key;
@@ -74,9 +73,15 @@ class HttpRequest {
         }
         
         const end_time = process.hrtime.bigint();
-        const ms = (Number(end_time - start_time) / 1000000).toFixed(2);
+        const ms = Math.round(Number(end_time - start_time) / 10000) / 100;
+
+        if (!ctx.state.pfapi) ctx.state.pfapi = {};
+        ctx.state.pfapi.started_at_ms = started_at_ms;
+        ctx.state.pfapi.run_time = ms;
 
         if (this.config?.send_response_time) ctx.set('X-PFAPI-Response-Time', `${ms} ms`);
+
+        if (this.log_activity) this.log_activity(ctx);
 
         logging.info(`key: ${cache_key} ${ms} ms ${ctx.path}`);
     }

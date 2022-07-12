@@ -1,6 +1,6 @@
 {
   "name": "strapi-pfapi",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "a strapi plugin library uses local and redis caches to achieve single digit milliseconds on average api response time.",
   "bugs": {
     "url": "https://github.com/iamsamwen/strapi-pfapi/issues"
@@ -26,7 +26,15 @@
     "milliseconds",
     "api",
     "processing",
-    "time"
+    "time",
+    "ip",
+    "block",
+    "allow",
+    "rate",
+    "limit",
+    "throttle",
+    "activity",
+    "log"
   ],
   "author": "Sam Wen",
   "license": "MIT Expat License",

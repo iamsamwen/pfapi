@@ -104,7 +104,7 @@ class PfapiUids {
                         const ip_prefix_list = [];
                         for (const {ip_cidr, prefix, status, comment} of value) {
                             if (ip_cidr === undefined || prefix === undefined) continue;
-                            if (!status || !['allow-list', 'block-list'].includes(status)) continue;
+                            if (!status || !['unlimited', 'blocked'].includes(status)) continue;
                             ip_prefix_list.push({__component: 'pfapi-types.ip-prefix', ip_cidr, prefix, status, comment});
                         }
                         if (ip_prefix_list.length === 0) continue;

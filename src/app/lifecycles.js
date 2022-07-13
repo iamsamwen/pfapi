@@ -19,6 +19,16 @@ module.exports = (app, uid) => {
             debug_verbose(uid, logging.cmsg(event));
             app.after_delete(event);
         },
+        async beforeDeleteMany(event) {
+            debug_verbose(uid, logging.cmsg(event));
+            await before_delete_many(uid, event);
+        },
+        afterDeleteMany(event) {
+            debug_verbose(uid, logging.cmsg(event));
+            if (event.params.deleted_items && event.result.count > 0) {
+                app.after_delete(event);
+            }
+        }
     };
     if (uid === uids_config.files_uid) {
         delete result.afterCreate;
@@ -39,5 +49,14 @@ module.exports = (app, uid) => {
 function update_component_media_populate(event) {
     if (event.params && event.params.populate) {
         event.params.populate = { attributes: { populate: { media: true } } };
+    }
+}
+
+async function before_delete_many(uid, event) {
+    if (event.params) {
+        const items = await strapi.db.query(uid).findMany(event.params);
+        if (items && items.length > 0) {
+            event.params.deleted_items = items;
+        }
     }
 }

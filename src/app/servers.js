@@ -246,7 +246,13 @@ class Servers extends RedisPubsub {
 
     after_delete(event) {
         const uid = event.model.uid;
-        if (!event.result.hasOwnProperty('publishedAt') || event.result.publishedAt) {
+        if (event.params.deleted_items) {
+            for (const item of event.params.deleted_items) {
+                if (!item.hasOwnProperty('publishedAt') || item.publishedAt) {
+                    this.publish({uid, action: 'delete', data: item});
+                }
+            }
+        } else if (!event.result.hasOwnProperty('publishedAt') || event.result.publishedAt) {
             this.publish({uid, action: 'delete', data: event.result});
         }
     }

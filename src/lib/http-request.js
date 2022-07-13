@@ -47,11 +47,13 @@ class HttpRequest {
         const started_at_ms = Date.now();
         const start_time = process.hrtime.bigint();
 
-        let cache_key;
+        let cache_key, ss_rand = false;
 
         if (this.defense_ok(ctx)) {
 
             const params = this.get_params(ctx);
+
+            ss_rand = !!params.ss_rand;
 
             if (!this.is_auth(ctx, params)) {
 
@@ -78,6 +80,8 @@ class HttpRequest {
         if (!ctx.state.pfapi) ctx.state.pfapi = {};
         ctx.state.pfapi.started_at_ms = started_at_ms;
         ctx.state.pfapi.run_time = ms;
+        ctx.state.pfapi.cache_key = cache_key;
+        ctx.state.pfapi.ss_rand = ss_rand;
 
         if (this.config?.send_response_time) ctx.set('X-PFAPI-Response-Time', `${ms} ms`);
 

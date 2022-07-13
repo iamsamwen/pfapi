@@ -18,7 +18,7 @@ It is powerful, extensible, and can efficiently serve the data retrieving servic
 
 ## how it works
 
-please refer to <a href="https://github.com/iamsamwen/strapi-plugin-pfapi">strapi-plugin-pfapi</a> to see how it works.
+Please refer to <a href="https://github.com/iamsamwen/strapi-plugin-pfapi">strapi-plugin-pfapi</a> to see how it works.
 
 ## how to use
 

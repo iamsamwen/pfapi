@@ -1,8 +1,8 @@
 'use strict';
 
+const fp = require('lodash/fp');
 const get_checksum = require('../utils/get-checksum');
 const get_dependency_key = require('../utils/get-dependency-key');
-const get_params = require('../utils/get-params');
 const { transform_config } = require('./handle-config');
 const uids_config = require('./uids-config');
 const default_configs = require('./default-configs');
@@ -177,7 +177,13 @@ class AppBase extends HttpRequest {
     }
 
     get_params(ctx) {
-        const params = get_params(ctx);
+        const params = fp.cloneDeep(ctx.query);
+        if (ctx.params) {
+            for (const [key, value] of Object.entries(ctx.params)) {
+                if (key === '0') continue;
+                params[key] = value;
+            }
+        }
         const config = this.get_pfapi_config(ctx);
         if (config && config.uid) {
             params.uid = config.uid;
@@ -203,8 +209,11 @@ class AppBase extends HttpRequest {
     }
 
     async handle_cache_requests(ctx) {
-        if (!process.env.DEBUG || ['pfapi:cache', 'pfapi:*', '*'].includes(process.env.DEBUG) || ctx.ip !== '127.0.0.1') {
-            this.http_response.handle_error(ctx, 403, 'Forbidden', 'handle_cache_requests', { reason: 'Only available for local cache debug'});
+        if (!process.env.DEBUG || !this.is_unlimited || !this.is_unlimited(ctx) || (
+                process.env.DEBUG !== '*' && 
+                !process.env.DEBUG.includes('pfapi:cache')  && 
+                !process.env.DEBUG.includes('pfapi:*'))) {
+            this.http_response.handle_error(ctx, 403, 'Forbidden', 'handle_cache_requests', { reason: 'Only available for debug and unlimited IP'});
         } else {
             await cache_requests(ctx, this.http_response, this.local_cache, this.redis_cache);
         }

@@ -25,13 +25,13 @@ class HttpThrottle extends Throttle {
     }
 
     get_signature(ctx, params) {
-        if (this.app.is_allow_listed && this.app.is_allow_listed(ctx)) {
+        if (this.app.is_unlimited && this.app.is_unlimited(ctx)) {
             return null;
         }
         const prefix = params.prefix || '';
         if (prefix && !ctx.path.startsWith(prefix)) return false;
         const base = params.ip_mask ? new Netmask(get_ip(ctx), params.ip_mask).base : '';
-        return {base, prefix};
+        return { base, prefix };
     }
 }
 

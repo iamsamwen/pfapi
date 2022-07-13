@@ -214,10 +214,10 @@ class AppBase extends HttpRequest {
         
         if (!this.strapi || !this.config.enable_log) return;
 
-        const { status, state: { pfapi: { config, ...pfapi }, route: {method, path, handler} }} = ctx;
+        const { status, method, path, state: { pfapi: { config, ...pfapi }, route: { handler } }} = ctx;
         const content_length = ctx.body ? ctx.body.length : 0;
         const data = {status, method, path, handler, content_length, ...pfapi};
-
+        console.log(data);
         let activities = this.local_cache.get('pfapi-activities');
         if (activities) {
             activities.push(data);

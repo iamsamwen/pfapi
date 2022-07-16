@@ -157,6 +157,9 @@ class HttpRequest {
             result.timestamp = config.timestamp;
         }
 
+        // to preserve the order of keys
+        for (const key in composite) data[key] = undefined;
+
         const promises = [];
     
         for (const [key, value] of Object.entries(composite)) {

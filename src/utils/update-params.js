@@ -24,7 +24,10 @@ module.exports = (params) => {
 
             Object.assign(params, config_params);
             
-            if (filters || config_filters) {
+            if (params.merge_filters !== undefined && params.merge_filters === false) {
+                if (config_params) params.filters = config_params;
+                else params.filters = {};
+            } else if (filters || config_filters) {
                 params.filters = merge_filters(filters, config_filters);
             }
         }

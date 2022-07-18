@@ -19,17 +19,12 @@ module.exports = (params) => {
         if (config && config.params) {
 
             const config_params = config.params;
-            const filters = params.filters;
+            const filters = config_params.merge_filters !== false ? params.filters : undefined;
             const config_filters = config_params.filters;
 
             Object.assign(params, config_params);
             
-            if (params.merge_filters !== undefined && params.merge_filters === false) {
-                if (config_params) params.filters = config_params;
-                else params.filters = {};
-            } else if (filters || config_filters) {
-                params.filters = merge_filters(filters, config_filters);
-            }
+            params.filters = merge_filters(filters, config_filters);
         }
     
         return config_key;

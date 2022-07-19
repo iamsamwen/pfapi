@@ -18,11 +18,12 @@ module.exports = (params) => {
 
         if (config && config.params) {
 
-            const config_params = config.params;
-            const filters = config_params.merge_filters !== false ? params.filters : undefined;
-            const config_filters = config_params.filters;
+            // merge_filters === false allows filters generated based only on config filters
+            //
+            const filters = params.merge_filters === false ? undefined : params.filters;
+            const config_filters = config.params.filters;
 
-            Object.assign(params, config_params);
+            Object.assign(params, config.params);
             
             params.filters = merge_filters(filters, config_filters);
         }

@@ -156,11 +156,13 @@ class Servers extends RedisPubsub {
             debug('on_db_delete', uid, data.id);
             const uids = Object.values(uids_config);
             if (uids.includes(uid)) {
-                this.app.del_config(uid, data);
-                if (uids_config.handle_uid === uid) {
-                    await this.evict_dependent(uid, data.handle);
-                } else if (uids_config.files_uid === uid) {
+                if (uids_config.files_uid === uid) {
                     await this.on_file_change(data, delete_attrs_file);
+                } else {
+                    this.app.del_config(uid, data);
+                    if (uids_config.handle_uid === uid) {
+                        await this.evict_dependent(uid, data.handle);
+                    }
                 }
             } else {
                 await this.evict_dependent(uid, data.id);

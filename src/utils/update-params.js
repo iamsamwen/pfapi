@@ -1,10 +1,17 @@
 'use strict';
 
+const get_dependency_key = require('./get-dependency-key');
 const get_key_and_config = require('../app/get-key-and-config');
 const merge_filters = require('./merge-filters');
 const uids_config = require('../app/uids-config');
 
-module.exports = (params) => {
+/**
+ * 
+ * @param {*} params 
+ * @param {*} config for supporting preview
+ * @returns 
+ */
+module.exports = (params, config) => {
 
     params.sort_default = !params.sort;
     
@@ -14,7 +21,10 @@ module.exports = (params) => {
 
     if (params.handle) {
         
-        const [config_key, config] = get_key_and_config(uids_config.handle_uid, params);
+        let config_key;
+
+        if (config) config_key = get_dependency_key({uid: uids_config.handle_uid, id: params.handle});
+        else [config_key, config] = get_key_and_config(uids_config.handle_uid, params);
 
         if (config && config.params) {
 

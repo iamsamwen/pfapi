@@ -24,6 +24,20 @@ class HttpRequest {
         return true;
     }
 
+    // for handle preview
+    //
+    is_preview(ctx) {
+        return false;
+    }
+
+    get_pfapi_config(ctx) {
+        return null;
+    }
+
+    async get_preview_config(ctx) {
+        return null;
+    }
+    
     defense_ok(ctx) {
         let ok = true;
         if (this.is_blocked(ctx)) {
@@ -42,8 +56,9 @@ class HttpRequest {
      * @param {*} object Refreshable or Composite
      */
     async handle(ctx, object) {
-
-        if (!ctx.state.pfapi) ctx.state.pfapi = {};
+        
+        if (!ctx.state) ctx.state = {pfapi: {}};
+        else if (!ctx.state.pfapi) ctx.state.pfapi = {};
 
         ctx.state.pfapi.started_at_ms = Date.now();
 
@@ -51,31 +66,54 @@ class HttpRequest {
 
         let cache_key, ss_rand = false;
 
-        if (this.defense_ok(ctx)) {
+        try {
 
-            const params = this.get_params(ctx);
+            if (this.defense_ok(ctx)) {
 
-            ss_rand = !!params.ss_rand;
+                let config;
+                
+                // when it is handle preview, we get it from database
+                //
+                if (this.is_preview(ctx)) {
+                    config = await this.get_preview_config(ctx);
+                }
 
-            if (!this.is_auth(ctx, params)) {
+                const params = this.get_params(ctx, config);
 
-                this.http_response.handle_error(ctx, 401, 'Unauthorized');
+                ss_rand = !!params.ss_rand;
 
-            } else if (object instanceof Refreshable) {
+                if (!this.is_auth(ctx, params)) {
 
-                cache_key = await this.handle_refreshable_request(ctx, params, object);
+                    this.http_response.handle_error(ctx, 401, 'Unauthorized');
 
-            } else if (object instanceof Composite) {
+                } else if (object instanceof Refreshable) {
 
-                cache_key = await this.handle_composite_request(ctx, params, object);
+                    cache_key = await this.handle_refreshable_request(ctx, params, object);
+
+                } else if (object instanceof Composite) {
+
+                    cache_key = await this.handle_composite_request(ctx, params, object);
+
+                } else {
+
+                    this.http_response.handle_error(ctx, 500, 'Server Internal Error', 'handle', {reason: 'unknown object type'});
+
+                }
+            }
+
+        } catch (err) {
+
+            if (err.message.startsWith('Not Found')) {
+
+                this.http_response.handle_error(ctx, 404, 'Not Found', 'handle', {reason: err.message});
 
             } else {
 
-                this.http_response.handle_error(ctx, 500, 'Server Internal Error', 'handle', {reason: 'unknown object type'});
-
+                logging.error(err);
+                this.http_response.handle_error(ctx, 500, 'Server Internal Error', 'handle', {reason: err.message});
             }
         }
-        
+
         const end_time = process.hrtime.bigint();
         const run_time = Math.round(Number(end_time - start_time) / 10000) / 100;
 
@@ -89,63 +127,53 @@ class HttpRequest {
     }
 
     async handle_refreshable_request(ctx, params, refreshable) {
-    
-        let cacheable;
 
-        try {
+        const cacheable = new Cacheable({params, refreshable});
         
-            cacheable = new Cacheable({params, refreshable});
-        
-            if (params.ss_rand) {
+        if (this.is_preview(ctx)) {
 
-                if (await cacheable.get()) {
+            const config = await this.get_preview_config(ctx)
+            await cacheable.get_data(config);
 
-                    this.http_response.handle_nocache_request(ctx, 200, cacheable.data, cacheable.content_type);
+        } else if (params.ss_rand) {
 
-                } else {
+            if (await cacheable.get()) {
 
-                    this.http_response.handle_error(ctx, 404, 'Not Found', 'handle_refreshable_request');
+                this.http_response.handle_nocache_request(ctx, 200, cacheable.data, cacheable.content_type);
 
-                }
             } else {
 
-                if (await cacheable.get(this.local_cache, this.redis_cache)) {
+                this.http_response.handle_error(ctx, 404, 'Not Found', 'handle_refreshable_request');
 
-                    this.http_response.handle_cacheable_request(ctx, cacheable);
-
-                } else {
-
-                    this.http_response.handle_error(ctx, 404, 'Not Found', 'handle_refreshable_request');
-                }
             }
-            
-        } catch (err) {
+        } else {
 
-            if (err.message.startsWith('Not Found')) {
+            if (await cacheable.get(this.local_cache, this.redis_cache)) {
 
-                this.http_response.handle_error(ctx, 404, 'Not Found', 'handle_refreshable_request', {reason: err.message});
+                this.http_response.handle_cacheable_request(ctx, cacheable);
 
             } else {
 
-                logging.error(err);
-                this.http_response.handle_error(ctx, 500, 'Server Internal Error', 'handle_refreshable_request', {reason: err.message});
+                this.http_response.handle_error(ctx, 404, 'Not Found', 'handle_refreshable_request');
             }
         }
         
         return cacheable ? cacheable.key : null;
     }
 
-    get_pfapi_config(ctx) {
-        return null;
-    }
-
     async handle_composite_request(ctx, params, composite)  {
-    
+
         const data = {};
 
         const result = { data, params : [] };
     
-        const config = this.get_pfapi_config(ctx);
+        let config;
+        
+        if (this.is_preview(ctx)) {
+            config = await this.get_preview_config(ctx);
+        } else {
+            config = this.get_pfapi_config(ctx);
+        }
 
         if (config) {
             if (config.attributes) {
@@ -164,7 +192,7 @@ class HttpRequest {
     
         for (const [key, value] of Object.entries(composite)) {
             if (value instanceof Refreshable) {
-                promises.push(this.run_refreshable(key, fp.cloneDeep(params), value, result));
+                promises.push(this.run_refreshable(ctx, key, fp.cloneDeep(params), value, result));
             } else if (data[key] === undefined) {
                 data[key] = value;
             }
@@ -188,18 +216,26 @@ class HttpRequest {
         return cacheable ? cacheable.key : null;
     }
 
-    async run_refreshable(key, params, refreshable, result) {
+    async run_refreshable(ctx, key, params, refreshable, result) {
 
         try {
     
             const cacheable = new Cacheable({params, refreshable});
         
-            if (params.ss_rand) {
+            if (this.is_preview(ctx)) {
+
+                const config = await this.get_preview_config(ctx)
+                await cacheable.get_data(config);
+
+            } else if (params.ss_rand) {
+
                 if (!await cacheable.get()) {
                     result.data[key] = {message: 'Not Found'};
                     return;
                 }
+
             } else {
+
                 if (await cacheable.get(this.local_cache, this.redis_cache)) {
                     const { timestamp, modified_time, ttl } = cacheable.plain_object;
                     if (!result.timestamp) result.timestamp = timestamp;

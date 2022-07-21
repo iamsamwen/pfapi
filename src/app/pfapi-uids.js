@@ -130,11 +130,10 @@ class PfapiUids {
             const ids_map_key = get_checksum('ids_config_keys_map');
             const ids_map = this.local_cache.get(ids_map_key) || {};
 
-            for (const { id, key, role } of items) {
+            for (const { id, key, role, allow_preview } of items) {
                 if (!role || !role.name) continue;
-
                 const config_key = this.app.get_config_key(uids_config.keys_uid, {key})
-                this.local_cache.put(config_key, role.name, true);
+                this.local_cache.put(config_key, { role: role.name, allow_preview }, true);
 
                 const str_id = String(id);
                 const old_config_key = ids_map[str_id];
@@ -239,8 +238,7 @@ class PfapiUids {
             return;
         }
 
-        const items = await this.strapi.entityService.findMany(uids_config.handle_uid, {populate: '*'});
-
+        const items = await this.strapi.entityService.findMany(uids_config.handle_uid, {publicationState: 'live', populate: '*'});
         if (items.length > 0) {
             for (const item of items) this.app.update_config(uids_config.handle_uid, item);
         }

@@ -7,7 +7,7 @@ const { transform_config } = require('./handle-config');
 const uids_config = require('./uids-config');
 const default_configs = require('./default-configs');
 const cache_requests = require('./cache-requests');
-
+const get_pfapi_prop = require('../utils/get-pfapi-prop');
 const HttpResponse = require('../lib/http-response');
 const LocalCache = require('../lib/local-cache');
 const RedisCache = require('../lib/redis-cache');
@@ -38,19 +38,22 @@ class AppBase extends HttpRequest {
         return this.get_config(uids_config.ips_uid) || [];
     }
 
-    get_api_key_role(params) {
-        let role = 'Public';
+    get_api_key_info(params) {
         const api_key = params.api_key || params['api-key'];
         if (api_key) {
             if (params.api_key) delete params.api_key;
             else delete params['api-key'];
-            role = this.get_config(uids_config.keys_uid, {key: api_key})
+            const {role, allow_preview} = this.get_config(uids_config.keys_uid, {key: api_key}) || {};
+            return [ api_key, role, allow_preview ];
+        } else {
+            return [ api_key, 'Public', false ];
         }
-        return [ api_key, role ];
     }
 
     get_permission_roles({uid, id}) {
-        if (!uid || !this.strapi.contentTypes[uid]) return [];
+        if (!uid || !this.strapi.contentTypes[uid]) {
+            throw new Error(`Not Found - ${!uid ? 'no uid' : 'uid not found'}`);
+        }
         const permissions = this.get_config(uids_config.permissions_uid);
         if (!permissions) return [];
         const action = `${uid}.${id ? 'findOne' : 'find'}`;
@@ -164,19 +167,32 @@ class AppBase extends HttpRequest {
     }
 
     get_pfapi_config(ctx) {
-        if (ctx.state?.pfapi_config !== undefined) {
-            return ctx.state?.pfapi_config;
-        }
-        let config = null;
+        let config = get_pfapi_prop(ctx, 'config');
+        if (config !== undefined) return config;
         if (ctx.params?.handle) {
             config = this.get_config(uids_config.handle_uid, { handle: ctx.params.handle });
         }
-        if (!ctx.state.pfapi) ctx.state.pfapi = {};
         ctx.state.pfapi.config = config;
         return config;
     }
 
-    get_params(ctx) {
+    // when it is handle preview, we get it from database
+    //
+    async get_preview_config(ctx) {
+        let config = get_pfapi_prop(ctx, 'config');
+        if (config !== undefined) return config;
+        if (ctx.params?.handle) {
+            const items = await this.strapi.entityService.findMany(uids_config.handle_uid, {
+                filters: {handle: ctx.params.handle}, publicationState: 'preview', populate: '*', limit: 1
+            });
+            if (items.length === 1) config = transform_config(items[0]).config;
+        }
+        ctx.state.pfapi.config = config;
+        return config;
+    }
+
+
+    get_params(ctx, config) {
         const params = fp.cloneDeep(ctx.query);
         if (ctx.params) {
             for (const [key, value] of Object.entries(ctx.params)) {
@@ -184,13 +200,20 @@ class AppBase extends HttpRequest {
                 params[key] = value;
             }
         }
-        const config = this.get_pfapi_config(ctx);
-        if (config && config.uid) {
-            params.uid = config.uid;
+        if (!config) config = this.get_pfapi_config(ctx);
+        if (config) {
+            if (config.uid) {
+                params.uid = config.uid;
+            } else {
+                throw new Error('Not Found - uid is not setup');
+            }
         } else if (params.handle) {
             const cache_key = get_checksum('uid_models');
             const models = this.local_cache.get(cache_key);
             params.uid = models[params.handle];
+            if (!params.uid) {
+                throw new Error(`Not Found - no uid matches ${params.handle}`);
+            }
         }
         if (params.id) {
             const id_field = config && config.id_field ? config.id_field : 'id';

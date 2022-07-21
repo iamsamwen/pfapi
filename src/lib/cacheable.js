@@ -239,7 +239,7 @@ class Cacheable {
     /**
      * fetch data from source and save result to redis
      * 
-     * @param {*} redis_cache 
+     * @param {*} redis_cache
      * @returns 
      */
     async fetch_data(redis_cache) {
@@ -262,18 +262,19 @@ class Cacheable {
     }
 
     /**
+     * @param {*} config for supporting preview 
      * get_data, it consequently calls to get_data of refreshable.
      * 
      * @returns no returns, throw exception if fails
      */
-    async get_data() {
+    async get_data(config) {
         const previous_checksum = this.checksum;
         const start_ms = Date.now();
         const params = fp.cloneDeep(this.params);
-        const config_key = update_params(params);
+        const config_key = update_params(params, config);
         const result = await this.refreshable.get_data(params);
         if (!result || result.data === undefined || result.data === null) {
-            throw new Error(`Not Found`);
+            throw new Error('Not Found - get_data');
         }
         this.data = result.data;
         this.timestamp = Date.now();

@@ -5,6 +5,7 @@ const Refreshable = require('./refreshable');
 const Cacheable = require('./cacheable');
 const Composite = require('./composite');
 const logging = require('../app/logging');
+const get_pfapi_prop = require('../utils/get-pfapi-prop');
 
 class HttpRequest {
 
@@ -50,6 +51,14 @@ class HttpRequest {
         return ok;
     }
 
+    get_ss_rand(ctx) {
+        let result = get_pfapi_prop(ctx, 'ss_rand');
+        if (result !== undefined) return result;
+        result = !!ctx.query.ss_rand;
+        ctx.state.pfapi.ss_rand = result;
+        return result;
+    }
+
     /**
      * 
      * @param {*} ctx 
@@ -57,14 +66,13 @@ class HttpRequest {
      */
     async handle(ctx, object) {
         
-        if (!ctx.state) ctx.state = {pfapi: {}};
-        else if (!ctx.state.pfapi) ctx.state.pfapi = {};
+        this.get_ss_rand(ctx);
 
         ctx.state.pfapi.started_at_ms = Date.now();
 
         const start_time = process.hrtime.bigint();
 
-        let cache_key, ss_rand = false;
+        let cache_key;
 
         try {
 
@@ -77,8 +85,6 @@ class HttpRequest {
                 }
 
                 const params = this.get_params(ctx, config);
-
-                ss_rand = !!params.ss_rand;
 
                 if (!this.is_auth(ctx, params)) {
 
@@ -115,7 +121,8 @@ class HttpRequest {
         const end_time = process.hrtime.bigint();
         const run_time = Math.round(Number(end_time - start_time) / 10000) / 100;
 
-        Object.assign(ctx.state.pfapi, {run_time, cache_key, ss_rand});
+        ctx.state.pfapi.run_time = run_time;
+        ctx.state.pfapi.cache_key = cache_key;
 
         if (this.config?.send_response_time) ctx.set('X-PFAPI-Response-Time', `${run_time} ms`);
 
@@ -134,7 +141,9 @@ class HttpRequest {
 
             await cacheable.get_data(config);
 
-        } else if (params.ss_rand) {
+            this.http_response.handle_nocache_request(ctx, 200, cacheable.data, cacheable.content_type);
+
+        } else if (this.get_ss_rand(ctx)) {
 
             if (await cacheable.get()) {
 
@@ -205,7 +214,7 @@ class HttpRequest {
     
         let cacheable;
 
-        if (params.ss_rand) {
+        if (this.get_ss_rand(ctx)) {
             this.http_response.handle_nocache_request(ctx, 200, data);
         } else {
             cacheable = new Cacheable(result);
@@ -227,7 +236,7 @@ class HttpRequest {
 
                 await cacheable.get_data(config);
 
-            } else if (params.ss_rand) {
+            } else if (this.get_ss_rand(ctx)) {
 
                 if (!await cacheable.get()) {
 

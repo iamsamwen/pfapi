@@ -167,26 +167,30 @@ class AppBase extends HttpRequest {
     }
 
     get_pfapi_config(ctx) {
-        let config = get_pfapi_prop(ctx, 'config');
-        if (config !== undefined) return config;
+        let result = get_pfapi_prop(ctx, 'config');
+        if (result !== undefined) return result;
         if (ctx.params?.handle) {
-            config = this.get_config(uids_config.handle_uid, { handle: ctx.params.handle });
+            result = this.get_config(uids_config.handle_uid, { handle: ctx.params.handle });
+        } else {
+            result = null;
         }
-        ctx.state.pfapi.config = config;
-        return config;
+        ctx.state.pfapi.config = result;
+        return result;
     }
 
     async get_preview_config(ctx) {
-        let config = get_pfapi_prop(ctx, 'config');
-        if (config !== undefined) return config;
+        let result = get_pfapi_prop(ctx, 'config');
+        if (result !== undefined) return result;
         if (ctx.params?.handle) {
             const items = await this.strapi.entityService.findMany(uids_config.handle_uid, {
                 filters: {handle: ctx.params.handle}, publicationState: 'preview', populate: '*', limit: 1
             });
-            if (items.length === 1) config = transform_config(items[0]).config;
+            if (items.length === 1) result = transform_config(items[0]).config;
+        } else {
+            result = null;
         }
-        ctx.state.pfapi.config = config;
-        return config;
+        ctx.state.pfapi.config = result;
+        return result;
     }
 
 

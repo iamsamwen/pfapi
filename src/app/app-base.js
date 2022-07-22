@@ -176,8 +176,6 @@ class AppBase extends HttpRequest {
         return config;
     }
 
-    // when it is handle preview, we get it from database
-    //
     async get_preview_config(ctx) {
         let config = get_pfapi_prop(ctx, 'config');
         if (config !== undefined) return config;

@@ -52,12 +52,10 @@ class PfapiApp extends AppBase {
         return result;
     }
 
-    // for handle preview
-    //
     is_preview(ctx) {
         let result = get_pfapi_prop(ctx, 'preview');
         if (result !== undefined) return result;
-        result = ctx.query.preview || ctx.params.preview;
+        result = ctx.query.preview || ctx.query.publicationState === 'preview';
         ctx.state.pfapi.preview = result;
         return result;
     }
@@ -71,8 +69,7 @@ class PfapiApp extends AppBase {
         const roles = this.get_permission_roles(params);
         if (roles) {
             [api_key, role, allow_preview] = this.get_api_key_info(params);
-            // handle preview or collection preview
-            if (!allow_preview && (this.is_preview(ctx) || params.publicationState === 'preview')) {
+            if (!allow_preview && this.is_preview(ctx)) {
                 result = false;
             } else {
                 result = roles.includes(role);

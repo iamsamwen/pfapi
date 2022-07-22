@@ -72,8 +72,6 @@ class HttpRequest {
 
                 let config;
                 
-                // when it is handle preview, we get it from database
-                //
                 if (this.is_preview(ctx)) {
                     config = await this.get_preview_config(ctx);
                 }
@@ -132,7 +130,8 @@ class HttpRequest {
         
         if (this.is_preview(ctx)) {
 
-            const config = await this.get_preview_config(ctx)
+            const config = await this.get_preview_config(ctx);
+
             await cacheable.get_data(config);
 
         } else if (params.ss_rand) {
@@ -224,13 +223,16 @@ class HttpRequest {
         
             if (this.is_preview(ctx)) {
 
-                const config = await this.get_preview_config(ctx)
+                const config = await this.get_preview_config(ctx);
+
                 await cacheable.get_data(config);
 
             } else if (params.ss_rand) {
 
                 if (!await cacheable.get()) {
+
                     result.data[key] = {message: 'Not Found'};
+                    
                     return;
                 }
 
